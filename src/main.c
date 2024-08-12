@@ -99,7 +99,6 @@ int main()
     // Initialize the database and create tables
     initializeDatabase(&db);
     initMenu(&u, db);
-
     // Close the database connection
     sqlite3_close(db);
     return 0;
