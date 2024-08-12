@@ -1,40 +1,6 @@
 #include "header.h"
 
-const char *RECORDS = "./data/records.txt";
-
-int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
-{
-    return fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
-                  &r->id,
-                  &r->userId,
-                  name,
-                  &r->accountNbr,
-                  &r->deposit.month,
-                  &r->deposit.day,
-                  &r->deposit.year,
-                  r->country,
-                  &r->phone,
-                  &r->amount,
-                  r->accountType) != EOF;
-}
-
-void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
-{
-    fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
-            r.id,
-            u.id,
-            u.name,
-            r.accountNbr,
-            r.deposit.month,
-            r.deposit.day,
-            r.deposit.year,
-            r.country,
-            r.phone,
-            r.amount,
-            r.accountType);
-}
-
-void stayOrReturn(int notGood, void f(struct User u), struct User u)
+void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db)
 {
     int option;
     if (notGood == 0)
@@ -73,7 +39,7 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
     }
 }
 
-void success(struct User u)
+void success(struct User u,sqlite3 *db)
 {
     int option;
     printf("\n✔ Success!\n\n");
@@ -96,30 +62,40 @@ invalid:
     }
 }
 
-void createNewAcc(struct User u)
+void createNewAcc(struct User u, sqlite3 *db)
 {
     struct Record r;
-    struct Record cr;
     char userName[50];
-    FILE *pf = fopen(RECORDS, "a+");
+    char *errMsg;
+    const char *sql_check = "SELECT account_type FROM accounts WHERE user_id = ? AND account_number = ?;";
+    const char *sql_insert = "INSERT INTO accounts (user_id, account_number, balance, account_type, phone_number,deposit_date, country) VALUES (?, ?, ?, ?, ?,?,?);";
+    sqlite3_stmt *stmt_check;
+    sqlite3_stmt *stmt_insert;
 
 noAccount:
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
-    printf("\nEnter today's date(mm/dd/yyyy):");
-    scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
+    printf("\nEnter today's date (YYYY-MM-DD): ");
+    scanf("%s", r.deposit_date);
     printf("\nEnter the account number:");
     scanf("%d", &r.accountNbr);
 
-    while (getAccountFromFile(pf, userName, &cr))
-    {
-        if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
-        {
-            printf("✖ This Account already exists for this user\n\n");
-            goto noAccount;
-        }
+    // Prepare and execute check statement
+    if (sqlite3_prepare_v2(db, sql_check, -1, &stmt_check, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
     }
+    sqlite3_bind_int(stmt_check, 1, u.id);
+    sqlite3_bind_int(stmt_check, 2, r.accountNbr);
+    if (sqlite3_step(stmt_check) == SQLITE_ROW) {
+        printf("Account already exists\n\n");
+        sqlite3_finalize(stmt_check);
+        return;
+    }
+    sqlite3_finalize(stmt_check);   
+
+ 
     printf("\nEnter the country:");
     scanf("%s", r.country);
     printf("\nEnter the phone number:");
@@ -129,37 +105,53 @@ noAccount:
     printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", r.accountType);
 
-    saveAccountToFile(pf, u, r);
-
-    fclose(pf);
-    success(u);
-}
-
-void checkAllAccounts(struct User u)
-{
-    char userName[100];
-    struct Record r;
-
-    FILE *pf = fopen(RECORDS, "r");
-
-    system("clear");
-    printf("\t\t====== All accounts from user, %s =====\n\n", u.name);
-    while (getAccountFromFile(pf, userName, &r))
-    {
-        if (strcmp(userName, u.name) == 0)
-        {
-            printf("_____________________\n");
-            printf("\nAccount number:%d\nDeposit Date:%d/%d/%d \ncountry:%s \nPhone number:%d \nAmount deposited: $%.2f \nType Of Account:%s\n",
-                   r.accountNbr,
-                   r.deposit.day,
-                   r.deposit.month,
-                   r.deposit.year,
-                   r.country,
-                   r.phone,
-                   r.amount,
-                   r.accountType);
-        }
+       // Prepare and execute insert statement
+    if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
     }
-    fclose(pf);
-    success(u);
+    sqlite3_bind_int(stmt_insert, 1, u.id);
+    sqlite3_bind_int(stmt_insert, 2, r.accountNbr);
+    sqlite3_bind_double(stmt_insert, 3, r.amount);
+    sqlite3_bind_text(stmt_insert, 4, r.accountType, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt_insert, 5, r.phone);
+    sqlite3_bind_text(stmt_insert, 6, r.deposit_date, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_insert, 7, r.country, -1, SQLITE_STATIC);
+
+
+    if (sqlite3_step(stmt_insert) != SQLITE_DONE) {
+        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+    } else {
+        printf("✔ Account created successfully!\n");
+    }
+    sqlite3_finalize(stmt_insert);
+
+    success(u, db);
 }
+
+// void checkAllAccounts(struct User u)
+// {
+//     char userName[100];
+//     struct Record r;
+
+
+//     system("clear");
+//     printf("\t\t====== All accounts from user, %s =====\n\n", u.name);
+//     while (getAccountFromFile(pf, userName, &r))
+//     {
+//         if (strcmp(userName, u.name) == 0)
+//         {
+//             printf("_____________________\n");
+//             printf("\nAccount number:%d\nDeposit Date:%d/%d/%d \ncountry:%s \nPhone number:%d \nAmount deposited: $%.2f \nType Of Account:%s\n",
+//                    r.accountNbr,
+//                    r.deposit.day,
+//                    r.deposit.month,
+//                    r.deposit.year,
+//                    r.country,
+//                    r.phone,
+//                    r.amount,
+//                    r.accountType);
+//         }
+//     }
+//     success(u);
+// }
