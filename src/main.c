@@ -24,6 +24,7 @@ void mainMenu(struct User u, sqlite3 *db)
         createNewAcc(u, db);
         break;
     case 2:
+    update(u,db);
         // student TODO : add your **Update account information** function
         // here
         break;
