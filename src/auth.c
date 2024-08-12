@@ -113,7 +113,7 @@ void registerAcc(sqlite3 *db)
 {
     struct User u;
     const char *sql_check = "SELECT name FROM users WHERE name = ?;";
-    const char *sql_insert = "INSERT INTO users (id, name, password) VALUES (?, ?, ?);";
+    const char *sql_insert = "INSERT INTO users (name, password) VALUES (?, ?);"; // No need to specify ID
     char encryptedPassword[50]; // Buffer for the encrypted password
     const char *key = "mysecretkey"; // Define a key for encryption
 
@@ -124,12 +124,17 @@ void registerAcc(sqlite3 *db)
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Name:");
     printf("\nEnter your username: ");
     scanf("%s", u.name);
+
+    // Check if the username already exists
     if (sqlite3_prepare_v2(db, sql_check, -1, &stmt_check, 0) != SQLITE_OK)
     {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
+
     sqlite3_bind_text(stmt_check, 1, u.name, -1, SQLITE_STATIC);
+    
+    // Execute the check statement
     if (sqlite3_step(stmt_check) == SQLITE_ROW)
     {
         printf("Account already exists\n\n");
@@ -144,21 +149,28 @@ void registerAcc(sqlite3 *db)
     // Encrypt the password before storing it
     encrypt(u.password, encryptedPassword, key);
 
-    if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) != SQLITE_OK) {
+    // Prepare the insert statement
+    if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
-   
-    sqlite3_bind_int(stmt_insert, 1, u.id);
-    sqlite3_bind_text(stmt_insert, 2, u.name, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt_insert, 3, encryptedPassword, -1, SQLITE_STATIC);
 
-    if (sqlite3_step(stmt_insert) != SQLITE_DONE) {
+    sqlite3_bind_text(stmt_insert, 1, u.name, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_insert, 2, encryptedPassword, -1, SQLITE_STATIC);
+
+    // Execute the insert statement
+    if (sqlite3_step(stmt_insert) != SQLITE_DONE)
+    {
         fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_insert);
         return;
-    } else {
-        printf("✔ Account registered successfully!\n");
-        mainMenu(u, db);
     }
     sqlite3_finalize(stmt_insert);
+
+    // Get the newly assigned user ID
+    u.id = sqlite3_last_insert_rowid(db); // Retrieve the last inserted ID
+
+    printf("✔ Account registered successfully!\n");
+    mainMenu(u, db);
 }
