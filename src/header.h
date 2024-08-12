@@ -5,11 +5,6 @@
 #include <string.h>
 #include <sqlite3.h>
 
-struct Date
-{
-    int month, day, year;
-};
-
 // all fields for each record of an account
 struct Record
 {
@@ -21,8 +16,9 @@ struct Record
     char accountType[10];
     int accountNbr;
     double amount;
-    struct Date deposit;
-    struct Date withdraw;
+    char deposit_date[11];
+    char withdraw_date[11];
+
 };
 
 struct User
@@ -38,7 +34,7 @@ void registerMenu(char a[50], char pass[50]);
 const char *getPassword(struct User u);
 
 // system function
-void createNewAcc(struct User u);
+void createNewAcc(struct User u, sqlite3 *db);
 void mainMenu(struct User u);
 void checkAllAccounts(struct User u);
 #endif // HEADER_H
