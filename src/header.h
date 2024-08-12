@@ -1,6 +1,9 @@
+#ifndef HEADER_H
+#define HEADER_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sqlite3.h>
 
 struct Date
 {
@@ -38,3 +41,4 @@ const char *getPassword(struct User u);
 void createNewAcc(struct User u);
 void mainMenu(struct User u);
 void checkAllAccounts(struct User u);
+#endif // HEADER_H
