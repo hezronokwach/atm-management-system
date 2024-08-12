@@ -1,5 +1,5 @@
 #include "header.h"
-#include "database.h" 
+#include "database.h"
 #include <stdbool.h>
 
 void mainMenu(struct User u, sqlite3 *db)
@@ -32,7 +32,7 @@ void mainMenu(struct User u, sqlite3 *db)
         // here
         break;
     case 4:
-        //checkAllAccounts(u);
+        checkAllAccounts(u, db);
         break;
     case 5:
         // student TODO : add your **Make transaction** function
@@ -60,13 +60,13 @@ void initMenu(struct User *u, sqlite3 *db)
     int option;
     while (!validInput)
     {
-    system("clear");
-    printf("\n\n\t\t======= ATM =======\n");
-    printf("\n\t\t-->> Feel free to login / register :\n");
-    printf("\n\t\t[1]- login\n");
-    printf("\n\t\t[2]- register\n");
-    printf("\n\t\t[3]- exit\n");
-  
+        system("clear");
+        printf("\n\n\t\t======= ATM =======\n");
+        printf("\n\t\t-->> Feel free to login / register :\n");
+        printf("\n\t\t[1]- login\n");
+        printf("\n\t\t[2]- register\n");
+        printf("\n\t\t[3]- exit\n");
+
         scanf("%d", &option);
         switch (option)
         {
@@ -91,20 +91,14 @@ void initMenu(struct User *u, sqlite3 *db)
     }
 };
 
-
-int main() {
+int main()
+{
     struct User u;
     sqlite3 *db; // Declare the database pointer
 
     // Initialize the database and create tables
     initializeDatabase(&db);
-     initMenu(&u, db);
-   // mainMenu(u, db);
-
-    // You can now proceed with other operations, such as user login or account management
-    // For example:
-    
-    // mainMenu(u, db);
+    initMenu(&u, db);
 
     // Close the database connection
     sqlite3_close(db);
