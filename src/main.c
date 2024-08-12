@@ -1,5 +1,6 @@
 #include "header.h"
 #include "database.h" 
+#include <stdbool.h>
 
 void mainMenu(struct User u, sqlite3 *db)
 {
@@ -20,7 +21,7 @@ void mainMenu(struct User u, sqlite3 *db)
     switch (option)
     {
     case 1:
-        createNewAcc(u,db);
+        createNewAcc(u, db);
         break;
     case 2:
         // student TODO : add your **Update account information** function
@@ -31,7 +32,7 @@ void mainMenu(struct User u, sqlite3 *db)
         // here
         break;
     case 4:
-        checkAllAccounts(u);
+        //checkAllAccounts(u);
         break;
     case 5:
         // student TODO : add your **Make transaction** function
@@ -53,53 +54,59 @@ void mainMenu(struct User u, sqlite3 *db)
     }
 };
 
-// void initMenu(struct User *u)
-// {
-//     int r = 0;
-//     int option;
-//     system("clear");
-//     printf("\n\n\t\t======= ATM =======\n");
-//     printf("\n\t\t-->> Feel free to login / register :\n");
-//     printf("\n\t\t[1]- login\n");
-//     printf("\n\t\t[2]- register\n");
-//     printf("\n\t\t[3]- exit\n");
-//     while (!r)
-//     {
-//         scanf("%d", &option);
-//         switch (option)
-//         {
-//         case 1:
-//             loginMenu(u->name, u->password);
-//             if (strcmp(u->password, getPassword(*u)) == 0)
-//             {
-//                 printf("\n\nPassword Match!");
-//             }
-//             else
-//             {
-//                 printf("\nWrong password!! or User Name\n");
-//                 exit(1);
-//             }
-//             r = 1;
-//             break;
-//         case 2:
-//             // student TODO : add your **Registration** function
-//             // here
-//             r = 1;
-//             break;
-//         case 3:
-//             exit(1);
-//             break;
-//         default:
-//             printf("Insert a valid operation!\n");
-//         }
-//     }
-// };
-
-int main()
+void initMenu(struct User *u, sqlite3 *db)
 {
+    bool validInput = false;
+    int option;
+    while (!validInput)
+    {
+    system("clear");
+    printf("\n\n\t\t======= ATM =======\n");
+    printf("\n\t\t-->> Feel free to login / register :\n");
+    printf("\n\t\t[1]- login\n");
+    printf("\n\t\t[2]- register\n");
+    printf("\n\t\t[3]- exit\n");
+  
+        scanf("%d", &option);
+        switch (option)
+        {
+        case 1:
+            loginMenu(db);
+            validInput = true;
+            break;
+        case 2:
+
+            registerAcc(db);
+            validInput = true;
+
+            // student TODO : add your **Registration** function
+            // here
+            break;
+        case 3:
+            exit(1);
+            break;
+        default:
+            printf("Insert a valid operation!\n");
+        }
+    }
+};
+
+
+int main() {
     struct User u;
     sqlite3 *db; // Declare the database pointer
+
     // Initialize the database and create tables
     initializeDatabase(&db);
-    mainMenu(u,db);
+     initMenu(&u, db);
+   // mainMenu(u, db);
+
+    // You can now proceed with other operations, such as user login or account management
+    // For example:
+    
+    // mainMenu(u, db);
+
+    // Close the database connection
+    sqlite3_close(db);
+    return 0;
 }
