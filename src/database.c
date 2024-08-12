@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <sqlite3.>
+#include <sqlite3.h>
 #include "database.h"
 
 // Function to initialize the database
