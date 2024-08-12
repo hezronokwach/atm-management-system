@@ -3,7 +3,7 @@ objects = src/main.o src/system.o src/auth.o src/database.o
 
 # Compiler flags
 CFLAGS = -I/home/hokwach/sqlite/include
-LDFLAGS = -L/home/hokwach/sqlite/lib -lsqlite3
+LDFLAGS = -L/home/hokwach/sqlite/lib -lsqlite3 
 
 # Target to build the executable
 atm: $(objects)
