@@ -25,6 +25,7 @@ void initializeDatabase(sqlite3 **db) {
                                          "balance REAL DEFAULT 0,"
                                          "account_type TEXT,"
                                          "deposit_date TEXT,"
+                                         "withdraw_date TEXT,"
                                          "country TEXT,"
                                          "FOREIGN KEY (user_id) REFERENCES users(id));";
 
