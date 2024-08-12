@@ -1,7 +1,7 @@
 #include "header.h"
 #include "database.h" 
 
-void mainMenu(struct User u)
+void mainMenu(struct User u, sqlite3 *db)
 {
     int option;
     system("clear");
@@ -20,7 +20,7 @@ void mainMenu(struct User u)
     switch (option)
     {
     case 1:
-        createNewAcc(u);
+        createNewAcc(u,db);
         break;
     case 2:
         // student TODO : add your **Update account information** function
@@ -101,5 +101,5 @@ int main()
     sqlite3 *db; // Declare the database pointer
     // Initialize the database and create tables
     initializeDatabase(&db);
-    mainMenu(u);
+    mainMenu(u,db);
 }
