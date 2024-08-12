@@ -18,7 +18,6 @@ struct Record
     double amount;
     char deposit_date[11];
     char withdraw_date[11];
-
 };
 
 struct User
@@ -29,12 +28,13 @@ struct User
 };
 
 // authentication functions
-void loginMenu(char a[50], char pass[50]);
-void registerMenu(char a[50], char pass[50]);
-const char *getPassword(struct User u);
+void loginMenu(sqlite3 *db);
+void registerAcc(sqlite3 *db);
+//void registerMenu(char a[50], char pass[50]);
+const char *getPassword(const char *username, sqlite3 *db) ;
 
 // system function
 void createNewAcc(struct User u, sqlite3 *db);
-void mainMenu(struct User u);
-void checkAllAccounts(struct User u);
+void mainMenu(struct User u, sqlite3 *db);
+//void checkAllAccounts(struct User u);
 #endif // HEADER_H
