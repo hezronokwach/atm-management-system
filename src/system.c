@@ -13,7 +13,7 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db
         if (option == 0)
             f(u);
         else if (option == 1)
-            mainMenu(u);
+            mainMenu(u,db);
         else if (option == 2)
             exit(0);
         else
@@ -30,7 +30,7 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db
     if (option == 1)
     {
         system("clear");
-        mainMenu(u);
+        mainMenu(u, db);
     }
     else
     {
@@ -49,7 +49,7 @@ invalid:
     system("clear");
     if (option == 1)
     {
-        mainMenu(u);
+        mainMenu(u,db);
     }
     else if (option == 0)
     {
