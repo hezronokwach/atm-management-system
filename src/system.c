@@ -1,7 +1,6 @@
 #include "header.h"
 #include <string.h> // Include this for strcpy
 
-
 void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db)
 {
     int option;
@@ -135,7 +134,6 @@ noAccount:
     success(u, db);
 }
 
-
 void checkAllAccounts(struct User u, sqlite3 *db)
 {
     const char *sql_retrieve = "SELECT account_number, deposit_date, country, phone_number, balance, account_type FROM accounts WHERE user_id = ?;";
@@ -171,13 +169,16 @@ void checkAllAccounts(struct User u, sqlite3 *db)
             const char *accountType = (const char *)sqlite3_column_text(stmt_retrieve, 5);
 
             // Copy strings into the Record structure
-            if (depositDate) {
+            if (depositDate)
+            {
                 strcpy(r.deposit_date, depositDate); // Copy deposit date
             }
-            if (country) {
+            if (country)
+            {
                 strcpy(r.country, country); // Copy country
             }
-            if (accountType) {
+            if (accountType)
+            {
                 strcpy(r.accountType, accountType); // Copy account type
             }
 
@@ -202,4 +203,114 @@ void checkAllAccounts(struct User u, sqlite3 *db)
     sqlite3_finalize(stmt_retrieve);
 
     success(u, db);
+}
+
+void update(struct User u, sqlite3 *db)
+{
+    int accID;
+    int choice;
+    char newcountry[100]; // Use fixed-size array for country
+    int newphone;
+    const char *sql_select = "SELECT * FROM accounts WHERE account_number = ?;";
+    const char *sql_update_country = "UPDATE accounts SET country = ? WHERE account_number = ?;";
+    const char *sql_update_phone = "UPDATE accounts SET phone_number = ? WHERE account_number = ?;";
+
+    sqlite3_stmt *stmt_retrieve;
+    sqlite3_stmt *stmt_update_phone;
+    sqlite3_stmt *stmt_update_country;
+
+    system("clear");
+    printf("\nEnter the account number you want to update:");
+    scanf("%d", &accID);
+
+    // Prepare the select statement
+    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_retrieve, 0) != SQLITE_OK)
+    {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    sqlite3_bind_int(stmt_retrieve, 1, accID);
+
+    // Execute the select statement
+    if (sqlite3_step(stmt_retrieve) != SQLITE_ROW)
+    {
+        printf("No account found with ID %d\n", accID);
+        sqlite3_finalize(stmt_retrieve);
+        return;
+    }
+
+    printf("\nWhich field do you want to update:");
+    printf("\n1 -- Phone number\n");
+    printf("2 -- Country\n");
+    scanf("%d", &choice);
+
+    if (choice == 1)
+    {
+        printf("Enter new phone number: ");
+        scanf("%d", &newphone);
+
+        // Prepare the update phone statement
+        if (sqlite3_prepare_v2(db, sql_update_phone, -1, &stmt_update_phone, 0) != SQLITE_OK)
+        {
+            fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+            sqlite3_finalize(stmt_retrieve);
+            return;
+        }
+        sqlite3_bind_int(stmt_update_phone, 1, newphone);
+        sqlite3_bind_int(stmt_update_phone, 2, accID);
+
+        // Execute the update phone statement
+        if (sqlite3_step(stmt_update_phone) != SQLITE_DONE)
+        {
+            fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+            sqlite3_finalize(stmt_retrieve);
+            sqlite3_finalize(stmt_update_phone);
+            return;
+        }
+        else
+        {
+            printf("Phone number successfully updated\n");
+        }
+
+        // Finalize the statements
+        sqlite3_finalize(stmt_retrieve);
+        sqlite3_finalize(stmt_update_phone);
+    }
+    else if (choice == 2)
+    {
+        printf("Enter new country:");
+        scanf("%s", newcountry);
+
+        // Prepare the update country statement
+        if (sqlite3_prepare_v2(db, sql_update_country, -1, &stmt_update_country, 0) != SQLITE_OK)
+        {
+            fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+            sqlite3_finalize(stmt_retrieve);
+            return;
+        }
+        sqlite3_bind_text(stmt_update_country, 1, newcountry, -1, SQLITE_STATIC);
+        sqlite3_bind_int(stmt_update_country, 2, accID);
+
+        // Execute the update country statement
+        if (sqlite3_step(stmt_update_country) != SQLITE_DONE)
+        {
+            fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+            sqlite3_finalize(stmt_retrieve);
+            sqlite3_finalize(stmt_update_country);
+            return;
+        }
+        else
+        {
+            printf("Country successfully updated\n");
+        }
+
+        // Finalize the statements
+        sqlite3_finalize(stmt_retrieve);
+        sqlite3_finalize(stmt_update_country);
+    }
+    else
+    {
+        printf("Wrong choice\n");
+    }
+    success(u,db);
 }
