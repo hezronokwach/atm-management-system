@@ -3,6 +3,7 @@ src/database.o
 src/main.o
 src/system.o
 atm
+atm_system.db
 
 
 
