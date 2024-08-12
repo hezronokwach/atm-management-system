@@ -36,5 +36,5 @@ const char *getPassword(const char *username, sqlite3 *db) ;
 // system function
 void createNewAcc(struct User u, sqlite3 *db);
 void mainMenu(struct User u, sqlite3 *db);
-//void checkAllAccounts(struct User u);
+void checkAllAccounts(struct User u,sqlite3 *db);
 #endif // HEADER_H
