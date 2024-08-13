@@ -24,11 +24,16 @@ void mainMenu(struct User u, sqlite3 *db)
         createNewAcc(u, db);
         break;
     case 2:
-    update(u,db);
+        update(u, db);
         // student TODO : add your **Update account information** function
         // here
         break;
     case 3:
+
+        int accID;
+        printf("Enter the account ID you want to check: ");
+        scanf("%d", &accID);
+        checkAccountsDetails(accID, db);
         // student TODO : add your **Check the details of existing accounts** function
         // here
         break;
@@ -53,7 +58,7 @@ void mainMenu(struct User u, sqlite3 *db)
     default:
         printf("Invalid operation!\n");
     }
-};
+}
 
 void initMenu(struct User *u, sqlite3 *db)
 {
@@ -90,7 +95,7 @@ void initMenu(struct User *u, sqlite3 *db)
             printf("Insert a valid operation!\n");
         }
     }
-};
+}
 
 int main()
 {
