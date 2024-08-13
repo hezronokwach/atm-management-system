@@ -39,5 +39,7 @@ void mainMenu(struct User u, sqlite3 *db);
 void checkAllAccounts(struct User u,sqlite3 *db);
 void update(struct User u, sqlite3 *db);
 void checkAccountsDetails(int accId, sqlite3 *db);
+void deleteAccount(int accId, sqlite3 *db);
+
 
 #endif // HEADER_H
