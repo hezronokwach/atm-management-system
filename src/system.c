@@ -315,6 +315,75 @@ void update(struct User u, sqlite3 *db)
     success(u, db);
 }
 
+void transferAcc(struct User u, sqlite3 *db)
+
+{
+    const char *sql_transfer = "UPDATE accounts SET name = ? WHERE account_number = ?;";
+    const char *sql_select = "SELECT * FROM accounts WHERE account_number = ?;";
+    const char *sql_name = "SELECT name FROM users WHERE name = ?;";
+
+    sqlite3_stmt *stmt_transfer;
+    sqlite3_stmt *stmt_select;
+    sqlite3_stmt *stmt_name;
+
+    int accID;
+    char newName[100];
+
+    system("clear");
+    printf("\nEnter the account number you want to transfer:");
+    scanf("%d", &accID);
+    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK)
+    {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_select);
+        return;
+    }
+    sqlite3_bind_int(stmt_select, 1, accID);
+
+    // Execute the select statement
+    if (sqlite3_step(stmt_select) != SQLITE_ROW)
+    {
+        printf("No account found with ID %d\n", accID);
+        sqlite3_finalize(stmt_select);
+        return;
+    }
+    printf("\nWhich name do you want to transfer to:");
+    scanf("%s", newName);
+
+    if (sqlite3_prepare_v2(db, sql_name, -1, &stmt_name, 0) != SQLITE_OK)
+    {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_name);
+        return;
+    }
+    sqlite3_bind_text(stmt_name, 1, newName, -1, SQLITE_STATIC);
+
+    // Execute the name statement
+    if (sqlite3_step(stmt_name) != SQLITE_ROW)
+    {
+        printf("No name found");
+        sqlite3_finalize(stmt_name);
+        return;
+    }
+
+    if (sqlite3_prepare_v2(db, sql_transfer, -1, &stmt_transfer, 0) != SQLITE_OK)
+    {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_transfer);
+        return;
+    }
+    sqlite3_bind_text(stmt_transfer, 1, newName, -1, SQLITE_STATIC);
+
+    // Execute the update phone statement
+    if (sqlite3_step(stmt_transfer) != SQLITE_DONE)
+    {
+        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_transfer);
+        return;
+    }
+    success(u, db);
+}
+
 void checkAccountsDetails(int accId, sqlite3 *db)
 {
     const char *sql_select = "SELECT account_number, deposit_date, country, phone_number, balance, account_type FROM accounts WHERE account_number = ?;";
