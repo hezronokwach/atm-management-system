@@ -53,6 +53,7 @@ void mainMenu(struct User u, sqlite3 *db)
         // here
         break;
     case 7:
+    transferAcc(u,db);
         // student TODO : add your **Transfer owner** function
         // here
         break;
