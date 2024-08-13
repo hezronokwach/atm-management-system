@@ -45,6 +45,10 @@ void mainMenu(struct User u, sqlite3 *db)
         // here
         break;
     case 6:
+        int accId;
+        printf("Enter the account ID you want to delete: ");
+        scanf("%d", &accId);
+        deleteAccount(accId, db);
         // student TODO : add your **Remove existing account** function
         // here
         break;
