@@ -312,5 +312,91 @@ void update(struct User u, sqlite3 *db)
     {
         printf("Wrong choice\n");
     }
+    success(u, db);
+}
+
+void checkAccountsDetails(int accId, sqlite3 *db)
+{
+    const char *sql_select = "SELECT account_number, deposit_date, country, phone_number, balance, account_type FROM accounts WHERE account_number = ?;";
+    sqlite3_stmt *stmt_select;
+    int accNumber;
+    char depositDate[11]; // Format: YYYY-MM-DD
+    char country[100];
+    int phone;
+    char accountType[20];
+    double amount;
+    double interest;
+    int interestDay;
+
+    // Prepare the SQL statement
+    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK)
+    {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+
+    // Bind the account ID
+    sqlite3_bind_int(stmt_select, 1, accId);
+
+    // Execute the statement and check for results
+    if (sqlite3_step(stmt_select) != SQLITE_ROW)
+    {
+        printf("No account found with ID %d\n", accId);
+        sqlite3_finalize(stmt_select);
+        return;
+    }
+
+    // Retrieve account details
+    accNumber = sqlite3_column_int(stmt_select, 0);
+    strcpy(depositDate, (const char *)sqlite3_column_text(stmt_select, 1));
+    strcpy(country, (const char *)sqlite3_column_text(stmt_select, 2));
+    phone = sqlite3_column_int(stmt_select, 3);
+    amount = sqlite3_column_double(stmt_select, 4);
+    strcpy(accountType, (const char *)sqlite3_column_text(stmt_select, 5));
+
+    // Extract the day from the deposit date
+    interestDay = atoi(&depositDate[8]); // Assuming depositDate is in YYYY-MM-DD format
+
+    // Display account details
+    system("clear");
+    printf("_____________________\n");
+    printf("\nAccount number: %d\nDeposit Date: %s\nCountry: %s\nPhone number: %d\nAmount deposited: $%.2f\nType Of Account: %s\n",
+           accNumber,
+           depositDate,
+           country,
+           phone,
+           amount,
+           accountType);
+
+    // Calculate and display interest based on account type
+    if (strcmp(accountType, "savings") == 0)
+    {
+        interest = (0.07 * amount) / 12; // Monthly interest
+        printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+    }
+    else if (strcmp(accountType, "fixed01") == 0)
+    {
+        interest = (0.04 * amount); // Total interest for 1 year
+        printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+    }
+    else if (strcmp(accountType, "fixed02") == 0)
+    {
+        interest = (0.05 * amount) * 2; // Total interest for 2 years
+        printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+    }
+    else if (strcmp(accountType, "fixed03") == 0)
+    {
+        interest = (0.08 * amount) * 3; // Total interest for 3 years
+        printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+    }
+    else if (strcmp(accountType, "current") == 0)
+    {
+        printf("You will not get interests because the account is of type current.\n");
+    }
+
+    // Finalize the statement
+    sqlite3_finalize(stmt_select);
+    struct User u;
     success(u,db);
+    
 }
