@@ -397,6 +397,31 @@ void checkAccountsDetails(int accId, sqlite3 *db)
     // Finalize the statement
     sqlite3_finalize(stmt_select);
     struct User u;
-    success(u,db);
-    
+    success(u, db);
+}
+
+void deleteAccount(int accId, sqlite3 *db)
+{
+    const char *sql_delete = "DELETE FROM accounts WHERE account_number = ?;";
+    sqlite3_stmt *stmt_delete;
+    if (sqlite3_prepare_v2(db, sql_delete, -1, &stmt_delete, 0) != SQLITE_OK)
+    {
+
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    sqlite3_bind_int(stmt_delete, 1, accId);
+    if (sqlite3_step(stmt_delete) != SQLITE_DONE)
+    {
+        printf("No account found");
+        sqlite3_finalize(stmt_delete);
+        return;
+    }
+    else
+    {
+        printf("Deleted successfully\n");
+    }
+    sqlite3_finalize(stmt_delete);
+    struct User u;
+    success(u, db);
 }
