@@ -315,74 +315,85 @@ void update(struct User u, sqlite3 *db)
     success(u, db);
 }
 
-void transferAcc(struct User u, sqlite3 *db)
+void transferAcc(struct User u, sqlite3 *db) {
+    const char *sql_select_account = "SELECT * FROM accounts WHERE account_number = ?;";
+    const char *sql_select_user = "SELECT name FROM users WHERE name = ?;";
+    const char *sql_update_account = "UPDATE accounts SET user_id = (SELECT id FROM users WHERE name = ?) WHERE account_number = ?;";
 
-{
-    const char *sql_transfer = "UPDATE accounts SET name = ? WHERE account_number = ?;";
-    const char *sql_select = "SELECT * FROM accounts WHERE account_number = ?;";
-    const char *sql_name = "SELECT name FROM users WHERE name = ?;";
-
-    sqlite3_stmt *stmt_transfer;
-    sqlite3_stmt *stmt_select;
-    sqlite3_stmt *stmt_name;
+    sqlite3_stmt *stmt_select_account;
+    sqlite3_stmt *stmt_select_user;
+    sqlite3_stmt *stmt_update_account;
 
     int accID;
     char newName[100];
 
     system("clear");
-    printf("\nEnter the account number you want to transfer:");
+    printf("\nEnter the account number you want to transfer: ");
     scanf("%d", &accID);
-    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK)
-    {
-        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt_select);
-        return;
-    }
-    sqlite3_bind_int(stmt_select, 1, accID);
 
-    // Execute the select statement
-    if (sqlite3_step(stmt_select) != SQLITE_ROW)
-    {
-        printf("No account found with ID %d\n", accID);
-        sqlite3_finalize(stmt_select);
+    // Begin transaction
+    if (sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
+        fprintf(stderr, "Error starting transaction: %s\n", sqlite3_errmsg(db));
         return;
     }
-    printf("\nWhich name do you want to transfer to:");
+
+    // Prepare and execute the select account statement
+    if (sqlite3_prepare_v2(db, sql_select_account, -1, &stmt_select_account, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing select account statement: %s\n", sqlite3_errmsg(db));
+        goto rollback;
+    }
+    sqlite3_bind_int(stmt_select_account, 1, accID);
+    if (sqlite3_step(stmt_select_account) != SQLITE_ROW) {
+        printf("No account found with ID %d\n", accID);
+        sqlite3_finalize(stmt_select_account);
+        goto rollback;
+    }
+    sqlite3_finalize(stmt_select_account);
+
+    printf("\nWhich name do you want to transfer to: ");
     scanf("%s", newName);
 
-    if (sqlite3_prepare_v2(db, sql_name, -1, &stmt_name, 0) != SQLITE_OK)
-    {
-        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt_name);
-        return;
+    // Prepare and execute the select user statement
+    if (sqlite3_prepare_v2(db, sql_select_user, -1, &stmt_select_user, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing select user statement: %s\n", sqlite3_errmsg(db));
+        goto rollback;
     }
-    sqlite3_bind_text(stmt_name, 1, newName, -1, SQLITE_STATIC);
-
-    // Execute the name statement
-    if (sqlite3_step(stmt_name) != SQLITE_ROW)
-    {
-        printf("No name found");
-        sqlite3_finalize(stmt_name);
-        return;
+    sqlite3_bind_text(stmt_select_user, 1, newName, -1, SQLITE_STATIC);
+    if (sqlite3_step(stmt_select_user) != SQLITE_ROW) {
+        printf("No user found with name %s\n", newName);
+        sqlite3_finalize(stmt_select_user);
+        goto rollback;
     }
+    sqlite3_finalize(stmt_select_user);
 
-    if (sqlite3_prepare_v2(db, sql_transfer, -1, &stmt_transfer, 0) != SQLITE_OK)
-    {
-        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt_transfer);
-        return;
+    // Prepare and execute the update account statement
+    if (sqlite3_prepare_v2(db, sql_update_account, -1, &stmt_update_account, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing update account statement: %s\n", sqlite3_errmsg(db));
+        goto rollback;
     }
-    sqlite3_bind_text(stmt_transfer, 1, newName, -1, SQLITE_STATIC);
-
-    // Execute the update phone statement
-    if (sqlite3_step(stmt_transfer) != SQLITE_DONE)
-    {
+    sqlite3_bind_text(stmt_update_account, 1, newName, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt_update_account, 2, accID);
+    if (sqlite3_step(stmt_update_account) != SQLITE_DONE) {
         fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt_transfer);
+        sqlite3_finalize(stmt_update_account);
+        goto rollback;
+    }
+    sqlite3_finalize(stmt_update_account);
+
+    // Commit transaction
+    if (sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
+        fprintf(stderr, "Error committing transaction: %s\n", sqlite3_errmsg(db));
         return;
     }
+
     success(u, db);
+    return;
+
+rollback:
+    // Rollback transaction in case of error
+    sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
 }
+
 
 void checkAccountsDetails(int accId, sqlite3 *db)
 {
