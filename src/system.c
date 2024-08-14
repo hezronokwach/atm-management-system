@@ -134,30 +134,31 @@ noAccount:
     success(u, db);
 }
 
-void checkAllAccounts(struct User u, sqlite3 *db)
-{
-    const char *sql_retrieve = "SELECT account_number, deposit_date, country, phone_number, balance, account_type FROM accounts WHERE user_id = ?;";
+void checkAllAccounts(struct User u, sqlite3 *db) {
+    const char *sql_retrieve = "SELECT a.account_number, a.deposit_date, a.country, a.phone_number, a.balance, a.account_type "
+                               "FROM accounts a "
+                               "LEFT JOIN transfers t ON a.account_number = t.account_number "
+                               "WHERE a.user_id = ? OR t.receiver_id = ?;";
+
     sqlite3_stmt *stmt_retrieve;
 
     // Prepare the SQL statement
-    if (sqlite3_prepare_v2(db, sql_retrieve, -1, &stmt_retrieve, 0) != SQLITE_OK)
-    {
+    if (sqlite3_prepare_v2(db, sql_retrieve, -1, &stmt_retrieve, 0) != SQLITE_OK) {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
 
     // Bind the user ID to the query
     sqlite3_bind_int(stmt_retrieve, 1, u.id);
+    sqlite3_bind_int(stmt_retrieve, 2, u.id);
 
     // Execute the query
-    if (sqlite3_step(stmt_retrieve) == SQLITE_ROW)
-    {
+    if (sqlite3_step(stmt_retrieve) == SQLITE_ROW) {
         system("clear");
         printf("\t\t====== All accounts for user, %s =====\n\n", u.name);
 
         // Loop through the results
-        do
-        {
+        do {
             struct Record r;
 
             // Retrieve account details
@@ -169,41 +170,24 @@ void checkAllAccounts(struct User u, sqlite3 *db)
             const char *accountType = (const char *)sqlite3_column_text(stmt_retrieve, 5);
 
             // Copy strings into the Record structure
-            if (depositDate)
-            {
-                strcpy(r.deposit_date, depositDate); // Copy deposit date
-            }
-            if (country)
-            {
-                strcpy(r.country, country); // Copy country
-            }
-            if (accountType)
-            {
-                strcpy(r.accountType, accountType); // Copy account type
-            }
+            if (depositDate) strcpy(r.deposit_date, depositDate);
+            if (country) strcpy(r.country, country);
+            if (accountType) strcpy(r.accountType, accountType);
 
             // Display account information
             printf("_____________________\n");
             printf("\nAccount number: %d\nDeposit Date: %s\nCountry: %s\nPhone number: %d\nAmount deposited: $%.2f\nType Of Account: %s\n",
-                   r.accountNbr,
-                   r.deposit_date,
-                   r.country,
-                   r.phone,
-                   r.amount,
-                   r.accountType);
-
+                   r.accountNbr, r.deposit_date, r.country, r.phone, r.amount, r.accountType);
         } while (sqlite3_step(stmt_retrieve) == SQLITE_ROW);
-    }
-    else
-    {
+    } else {
         printf("No accounts found for user: %s\n", u.name);
     }
 
     // Finalize the statement
     sqlite3_finalize(stmt_retrieve);
-
     success(u, db);
 }
+
 
 void update(struct User u, sqlite3 *db)
 {
@@ -315,15 +299,49 @@ void update(struct User u, sqlite3 *db)
     success(u, db);
 }
 
+void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db) {
+    const char *sql_update_account = "UPDATE accounts SET user_id = (SELECT id FROM users WHERE name = ?) WHERE account_number = ?;";
+    const char *sql_insert_transfer = "INSERT INTO transfers (account_number, sender_id, receiver_id, transfer_date) VALUES (?, (SELECT id FROM users WHERE name = ?), (SELECT id FROM users WHERE name = ?), DATE('now'));";
+    sqlite3_stmt *stmt_update_account;
+    sqlite3_stmt *stmt_insert_transfer;
+
+    // Prepare and execute the update account statement
+    if (sqlite3_prepare_v2(db, sql_update_account, -1, &stmt_update_account, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing update account statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    sqlite3_bind_text(stmt_update_account, 1, receiverName, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt_update_account, 2, accID);
+
+    if (sqlite3_step(stmt_update_account) != SQLITE_DONE) {
+        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_update_account);
+        return;
+    }
+    sqlite3_finalize(stmt_update_account);
+
+    // Prepare and execute the insert transfer statement
+    if (sqlite3_prepare_v2(db, sql_insert_transfer, -1, &stmt_insert_transfer, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing insert transfer statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    sqlite3_bind_int(stmt_insert_transfer, 1, accID);
+    sqlite3_bind_text(stmt_insert_transfer, 2, u.name, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_insert_transfer, 3, receiverName, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt_insert_transfer) != SQLITE_DONE) {
+        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt_insert_transfer);
+        return;
+    }
+    sqlite3_finalize(stmt_insert_transfer);
+}
+
 void transferAcc(struct User u, sqlite3 *db) {
     const char *sql_select_account = "SELECT * FROM accounts WHERE account_number = ?;";
-    const char *sql_select_user = "SELECT name FROM users WHERE name = ?;";
-    const char *sql_update_account = "UPDATE accounts SET user_id = (SELECT id FROM users WHERE name = ?) WHERE account_number = ?;";
-
+    const char *sql_select_user = "SELECT id FROM users WHERE name = ?;";
     sqlite3_stmt *stmt_select_account;
     sqlite3_stmt *stmt_select_user;
-    sqlite3_stmt *stmt_update_account;
-
     int accID;
     char newName[100];
 
@@ -337,12 +355,13 @@ void transferAcc(struct User u, sqlite3 *db) {
         return;
     }
 
-    // Prepare and execute the select account statement
+    // Check if the account exists
     if (sqlite3_prepare_v2(db, sql_select_account, -1, &stmt_select_account, 0) != SQLITE_OK) {
         fprintf(stderr, "Error preparing select account statement: %s\n", sqlite3_errmsg(db));
         goto rollback;
     }
     sqlite3_bind_int(stmt_select_account, 1, accID);
+
     if (sqlite3_step(stmt_select_account) != SQLITE_ROW) {
         printf("No account found with ID %d\n", accID);
         sqlite3_finalize(stmt_select_account);
@@ -353,12 +372,13 @@ void transferAcc(struct User u, sqlite3 *db) {
     printf("\nWhich name do you want to transfer to: ");
     scanf("%s", newName);
 
-    // Prepare and execute the select user statement
+    // Check if the receiver exists
     if (sqlite3_prepare_v2(db, sql_select_user, -1, &stmt_select_user, 0) != SQLITE_OK) {
         fprintf(stderr, "Error preparing select user statement: %s\n", sqlite3_errmsg(db));
         goto rollback;
     }
     sqlite3_bind_text(stmt_select_user, 1, newName, -1, SQLITE_STATIC);
+
     if (sqlite3_step(stmt_select_user) != SQLITE_ROW) {
         printf("No user found with name %s\n", newName);
         sqlite3_finalize(stmt_select_user);
@@ -366,19 +386,8 @@ void transferAcc(struct User u, sqlite3 *db) {
     }
     sqlite3_finalize(stmt_select_user);
 
-    // Prepare and execute the update account statement
-    if (sqlite3_prepare_v2(db, sql_update_account, -1, &stmt_update_account, 0) != SQLITE_OK) {
-        fprintf(stderr, "Error preparing update account statement: %s\n", sqlite3_errmsg(db));
-        goto rollback;
-    }
-    sqlite3_bind_text(stmt_update_account, 1, newName, -1, SQLITE_STATIC);
-    sqlite3_bind_int(stmt_update_account, 2, accID);
-    if (sqlite3_step(stmt_update_account) != SQLITE_DONE) {
-        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt_update_account);
-        goto rollback;
-    }
-    sqlite3_finalize(stmt_update_account);
+    // Complete the transfer process
+    completeTransfer(accID, newName, u, db);
 
     // Commit transaction
     if (sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
