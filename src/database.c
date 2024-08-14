@@ -17,17 +17,27 @@ void initializeDatabase(sqlite3 **db) {
                                       "phone TEXT,"
                                       "country TEXT);";
 
-    const char *create_records_table = "CREATE TABLE IF NOT EXISTS accounts ("
+    const char *create_accounts_table = "CREATE TABLE IF NOT EXISTS accounts ("
+                                        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                                        "user_id INTEGER,"
+                                        "phone_number INTEGER,"
+                                        "account_number INTEGER UNIQUE,"
+                                        "balance REAL DEFAULT 0,"
+                                        "account_type TEXT,"
+                                        "deposit_date TEXT,"
+                                        "withdraw_date TEXT,"
+                                        "country TEXT,"
+                                        "FOREIGN KEY (user_id) REFERENCES users(id));";
+
+    const char *create_transfers_table = "CREATE TABLE IF NOT EXISTS transfers ("
                                          "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                         "user_id INTEGER,"
-                                         "phone_number INTEGER,"                                    
-                                         "account_number INTEGER UNIQUE,"
-                                         "balance REAL DEFAULT 0,"
-                                         "account_type TEXT,"
-                                         "deposit_date TEXT,"
-                                         "withdraw_date TEXT,"
-                                         "country TEXT,"
-                                         "FOREIGN KEY (user_id) REFERENCES users(id));";
+                                         "account_number INTEGER,"
+                                         "sender_id INTEGER,"
+                                         "receiver_id INTEGER,"
+                                         "transfer_date TEXT,"
+                                         "FOREIGN KEY (sender_id) REFERENCES users(id),"
+                                         "FOREIGN KEY (receiver_id) REFERENCES users(id),"
+                                         "FOREIGN KEY (account_number) REFERENCES accounts(account_number));";
 
     char *errMsg;
 
@@ -36,7 +46,12 @@ void initializeDatabase(sqlite3 **db) {
         sqlite3_free(errMsg);
     }
 
-    if (sqlite3_exec(*db, create_records_table, 0, 0, &errMsg) != SQLITE_OK) {
+    if (sqlite3_exec(*db, create_accounts_table, 0, 0, &errMsg) != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", errMsg);
+        sqlite3_free(errMsg);
+    }
+
+    if (sqlite3_exec(*db, create_transfers_table, 0, 0, &errMsg) != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", errMsg);
         sqlite3_free(errMsg);
     }
