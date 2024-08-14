@@ -514,3 +514,91 @@ void deleteAccount(int accId, sqlite3 *db)
     struct User u;
     success(u, db);
 }
+
+void makeTransaction(struct User u, sqlite3 *db) {
+    int accID;
+    int choice;
+    char transactionType[10];
+    double amount;
+    double balance;
+    char accountType[20];
+    const char *sql_select = "SELECT account_type, balance, account_number FROM accounts WHERE account_number = ?;";
+    const char *sql_update = "UPDATE accounts SET balance = ? WHERE account_number = ?;";
+    sqlite3_stmt *stmt_select;
+    sqlite3_stmt *stmt_update;
+
+    // Step 1: Prompt for Account ID
+    printf("Enter the account ID you want to make a transaction on: ");
+    scanf("%d", &accID);
+
+    // Step 2: Validate Account ID
+    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    sqlite3_bind_int(stmt_select, 1, accID);
+
+    if (sqlite3_step(stmt_select) != SQLITE_ROW) {
+        printf("No account found with ID %d\n", accID);
+        sqlite3_finalize(stmt_select);
+        return;
+    }
+
+    // Step 3: Retrieve Account Details
+    strncpy(accountType, (const char *)sqlite3_column_text(stmt_select, 0), sizeof(accountType) - 1);
+    balance = sqlite3_column_double(stmt_select, 1);
+
+    sqlite3_finalize(stmt_select);
+
+    // Step 4: Validate Account Type
+    if (strcmp(accountType, "fixed01") == 0 || strcmp(accountType, "fixed02") == 0 || strcmp(accountType, "fixed03") == 0) {
+        printf("Transactions are not allowed for this account type.\n");
+        return;
+    }
+
+    // Step 5: Prompt for Transaction Type and Amount
+    printf("Do you want to withdraw or deposit money? (withdraw/deposit) ");
+    printf("\n1 --> withdraw\n");
+    printf("2 --> deposit\n");
+    scanf("%d", &choice);
+    printf("Enter the amount for the transaction: ");
+    scanf("%lf", &amount);
+
+    // Step 6: Perform Transaction
+    if (choice == 1) {
+        if (amount <= balance) {
+            balance -= amount;
+        } else {
+            printf("Insufficient balance.\n");
+            return;
+        }
+    } else if ((choice == 2)) {
+        balance += amount;
+    } else {
+        printf("Invalid transaction type.\n");
+        return;
+    }
+
+    // Step 7: Update Database
+    if (sqlite3_prepare_v2(db, sql_update, -1, &stmt_update, 0) != SQLITE_OK) {
+        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    sqlite3_bind_double(stmt_update, 1, balance);
+    sqlite3_bind_int(stmt_update, 2, accID);
+
+    if (sqlite3_step(stmt_update) != SQLITE_DONE) {
+        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt_update);
+
+    // Step 8: Display Transaction Details
+    printf("Transaction type: %s\n", transactionType);
+    printf("Amount: %.2f\n", amount);
+    printf("Updated balance: $%.2f\n", balance);
+
+    // Step 9: Return to Main Menu
+    success(u, db);
+}
+
