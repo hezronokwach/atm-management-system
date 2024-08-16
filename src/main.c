@@ -99,6 +99,8 @@ void initMenu(struct User *u, sqlite3 *db)
             break;
         default:
             printf("Insert a valid operation!\n");
+            validInput = true;
+            break;
         }
     }
 }
