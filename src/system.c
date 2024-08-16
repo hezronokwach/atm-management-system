@@ -1,5 +1,6 @@
 #include "header.h"
 #include <string.h> // Include this for strcpy
+#include <stdbool.h>
 
 void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db)
 {
@@ -63,13 +64,17 @@ invalid:
     }
 }
 
+#include <stdbool.h> // Include this for using bool, true, and false
+#include "header.h"
+#include "database.h"
+
+// Your existing code...
+
 void createNewAcc(struct User u, sqlite3 *db)
 {
     struct Record r;
-    char userName[50];
-    char *errMsg;
-    const char *sql_check = "SELECT account_type FROM accounts WHERE user_id = ? AND account_number = ?;";
-    const char *sql_insert = "INSERT INTO accounts (user_id, account_number, balance, account_type, phone_number,deposit_date, country) VALUES (?, ?, ?, ?, ?,?,?);";
+    const char *sql_check = "SELECT account_type FROM accounts WHERE user_id =? AND account_number =?;";
+    const char *sql_insert = "INSERT INTO accounts (user_id, account_number, balance, account_type, phone_number, deposit_date, country) VALUES (?,?,?,?,?,?,?);";
     sqlite3_stmt *stmt_check;
     sqlite3_stmt *stmt_insert;
 
@@ -79,7 +84,8 @@ noAccount:
 
     printf("\nEnter today's date (YYYY-MM-DD): ");
     scanf("%s", r.deposit_date);
-    printf("\nEnter the account number:");
+
+    printf("\nEnter the account number: ");
     scanf("%d", &r.accountNbr);
 
     // Prepare and execute check statement
@@ -88,24 +94,47 @@ noAccount:
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
+
     sqlite3_bind_int(stmt_check, 1, u.id);
     sqlite3_bind_int(stmt_check, 2, r.accountNbr);
+
     if (sqlite3_step(stmt_check) == SQLITE_ROW)
     {
         printf("Account already exists\n\n");
         sqlite3_finalize(stmt_check);
         return;
     }
+
     sqlite3_finalize(stmt_check);
 
-    printf("\nEnter the country:");
+    printf("\nEnter the country: ");
     scanf("%s", r.country);
-    printf("\nEnter the phone number:");
+
+    printf("\nEnter the phone number: ");
     scanf("%d", &r.phone);
+
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
-    printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
+
+    printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice: ");
     scanf("%s", r.accountType);
+
+    // Validate account type input
+    while (true)
+    {
+        if (strcmp(r.accountType, "saving") == 0 || strcmp(r.accountType, "current") == 0 ||
+            strcmp(r.accountType, "fixed01") == 0 || strcmp(r.accountType, "fixed02") == 0 ||
+            strcmp(r.accountType, "fixed03") == 0)
+        {
+            break;
+        }
+        else
+        {
+            printf("Invalid account type. Please choose from the provided options.\n");
+            printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice: ");
+            scanf("%s", r.accountType);
+        }
+    }
 
     // Prepare and execute insert statement
     if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) != SQLITE_OK)
@@ -113,6 +142,7 @@ noAccount:
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
+
     sqlite3_bind_int(stmt_insert, 1, u.id);
     sqlite3_bind_int(stmt_insert, 2, r.accountNbr);
     sqlite3_bind_double(stmt_insert, 3, r.amount);
@@ -129,13 +159,14 @@ noAccount:
     {
         printf("✔ Account created successfully!\n");
     }
-    sqlite3_finalize(stmt_insert);
 
+    sqlite3_finalize(stmt_insert);
     success(u, db);
 }
 
-void checkAllAccounts(struct User u, sqlite3 *db) {
-    const char *sql_retrieve = 
+void checkAllAccounts(struct User u, sqlite3 *db)
+{
+    const char *sql_retrieve =
         "SELECT account_number, deposit_date, country, phone_number, balance, account_type "
         "FROM accounts "
         "WHERE user_id = ?;";
@@ -143,7 +174,8 @@ void checkAllAccounts(struct User u, sqlite3 *db) {
     sqlite3_stmt *stmt_retrieve;
 
     // Prepare the SQL statement
-    if (sqlite3_prepare_v2(db, sql_retrieve, -1, &stmt_retrieve, 0) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sql_retrieve, -1, &stmt_retrieve, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
@@ -152,12 +184,14 @@ void checkAllAccounts(struct User u, sqlite3 *db) {
     sqlite3_bind_int(stmt_retrieve, 1, u.id);
 
     // Execute the query
-    if (sqlite3_step(stmt_retrieve) == SQLITE_ROW) {
+    if (sqlite3_step(stmt_retrieve) == SQLITE_ROW)
+    {
         system("clear");
         printf("\t\t====== All accounts for user, %s =====\n\n", u.name);
 
         // Loop through the results
-        do {
+        do
+        {
             struct Record r;
 
             // Retrieve account details
@@ -169,16 +203,21 @@ void checkAllAccounts(struct User u, sqlite3 *db) {
             const char *accountType = (const char *)sqlite3_column_text(stmt_retrieve, 5);
 
             // Copy strings into the Record structure
-            if (depositDate) strcpy(r.deposit_date, depositDate);
-            if (country) strcpy(r.country, country);
-            if (accountType) strcpy(r.accountType, accountType);
+            if (depositDate)
+                strcpy(r.deposit_date, depositDate);
+            if (country)
+                strcpy(r.country, country);
+            if (accountType)
+                strcpy(r.accountType, accountType);
 
             // Display account information
             printf("_____________________\n");
             printf("\nAccount number: %d\nDeposit Date: %s\nCountry: %s\nPhone number: %d\nAmount deposited: $%.2f\nType Of Account: %s\n",
                    r.accountNbr, r.deposit_date, r.country, r.phone, r.amount, r.accountType);
         } while (sqlite3_step(stmt_retrieve) == SQLITE_ROW);
-    } else {
+    }
+    else
+    {
         printf("No accounts found for user: %s\n", u.name);
     }
 
@@ -186,7 +225,6 @@ void checkAllAccounts(struct User u, sqlite3 *db) {
     sqlite3_finalize(stmt_retrieve);
     success(u, db);
 }
-
 
 void update(struct User u, sqlite3 *db)
 {
@@ -298,28 +336,34 @@ void update(struct User u, sqlite3 *db)
     success(u, db);
 }
 
-void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db) {
+void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db)
+{
     const char *sql_update_account = "UPDATE accounts SET user_id = (SELECT id FROM users WHERE name = ?) WHERE account_number = ?;";
     sqlite3_stmt *stmt_update_account;
 
     // Prepare and execute the update account statement
-    if (sqlite3_prepare_v2(db, sql_update_account, -1, &stmt_update_account, 0) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sql_update_account, -1, &stmt_update_account, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing update account statement: %s\n", sqlite3_errmsg(db));
         return;
     }
     sqlite3_bind_text(stmt_update_account, 1, receiverName, -1, SQLITE_STATIC);
     sqlite3_bind_int(stmt_update_account, 2, accID);
 
-    if (sqlite3_step(stmt_update_account) != SQLITE_DONE) {
+    if (sqlite3_step(stmt_update_account) != SQLITE_DONE)
+    {
         fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
-    } else {
+    }
+    else
+    {
         printf("Account ID %d successfully transferred to %s\n", accID, receiverName);
     }
 
     sqlite3_finalize(stmt_update_account);
 }
 
-void transferAcc(struct User u, sqlite3 *db) {
+void transferAcc(struct User u, sqlite3 *db)
+{
     const char *sql_select_account = "SELECT * FROM accounts WHERE account_number = ?;";
     const char *sql_select_user = "SELECT id FROM users WHERE name = ?;";
     sqlite3_stmt *stmt_select_account;
@@ -332,19 +376,22 @@ void transferAcc(struct User u, sqlite3 *db) {
     scanf("%d", &accID);
 
     // Begin transaction
-    if (sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
+    if (sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK)
+    {
         fprintf(stderr, "Error starting transaction: %s\n", sqlite3_errmsg(db));
         return;
     }
 
     // Check if the account exists
-    if (sqlite3_prepare_v2(db, sql_select_account, -1, &stmt_select_account, 0) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sql_select_account, -1, &stmt_select_account, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing select account statement: %s\n", sqlite3_errmsg(db));
         goto rollback;
     }
     sqlite3_bind_int(stmt_select_account, 1, accID);
 
-    if (sqlite3_step(stmt_select_account) != SQLITE_ROW) {
+    if (sqlite3_step(stmt_select_account) != SQLITE_ROW)
+    {
         printf("No account found with ID %d\n", accID);
         sqlite3_finalize(stmt_select_account);
         goto rollback;
@@ -355,13 +402,15 @@ void transferAcc(struct User u, sqlite3 *db) {
     scanf("%s", newName);
 
     // Check if the receiver exists
-    if (sqlite3_prepare_v2(db, sql_select_user, -1, &stmt_select_user, 0) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sql_select_user, -1, &stmt_select_user, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing select user statement: %s\n", sqlite3_errmsg(db));
         goto rollback;
     }
     sqlite3_bind_text(stmt_select_user, 1, newName, -1, SQLITE_STATIC);
 
-    if (sqlite3_step(stmt_select_user) != SQLITE_ROW) {
+    if (sqlite3_step(stmt_select_user) != SQLITE_ROW)
+    {
         printf("No user found with name %s\n", newName);
         sqlite3_finalize(stmt_select_user);
         goto rollback;
@@ -372,18 +421,20 @@ void transferAcc(struct User u, sqlite3 *db) {
     completeTransfer(accID, newName, u, db);
 
     // Commit transaction
-    if (sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
+    if (sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK)
+    {
         fprintf(stderr, "Error committing transaction: %s\n", sqlite3_errmsg(db));
         return;
     }
 
     // Run a simple query to refresh the connection state
-    if (sqlite3_exec(db, "SELECT 1;", NULL, NULL, NULL) != SQLITE_OK) {
+    if (sqlite3_exec(db, "SELECT 1;", NULL, NULL, NULL) != SQLITE_OK)
+    {
         fprintf(stderr, "Error executing SELECT 1: %s\n", sqlite3_errmsg(db));
     }
 
     // Immediately check all accounts after transfer
-//checkAllAccounts(u, db); // Fetch the latest account data
+    // checkAllAccounts(u, db); // Fetch the latest account data
 
     success(u, db);
     return;
@@ -392,8 +443,6 @@ rollback:
     // Rollback transaction in case of error
     sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
 }
-
-
 
 void checkAccountsDetails(int accId, sqlite3 *db)
 {
@@ -506,7 +555,8 @@ void deleteAccount(int accId, sqlite3 *db)
     success(u, db);
 }
 
-void makeTransaction(struct User u, sqlite3 *db) {
+void makeTransaction(struct User u, sqlite3 *db)
+{
     int accID;
     int choice;
     char transactionType[10];
@@ -523,13 +573,15 @@ void makeTransaction(struct User u, sqlite3 *db) {
     scanf("%d", &accID);
 
     // Step 2: Validate Account ID
-    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
     sqlite3_bind_int(stmt_select, 1, accID);
 
-    if (sqlite3_step(stmt_select) != SQLITE_ROW) {
+    if (sqlite3_step(stmt_select) != SQLITE_ROW)
+    {
         printf("No account found with ID %d\n", accID);
         sqlite3_finalize(stmt_select);
         return;
@@ -542,7 +594,8 @@ void makeTransaction(struct User u, sqlite3 *db) {
     sqlite3_finalize(stmt_select);
 
     // Step 4: Validate Account Type
-    if (strcmp(accountType, "fixed01") == 0 || strcmp(accountType, "fixed02") == 0 || strcmp(accountType, "fixed03") == 0) {
+    if (strcmp(accountType, "fixed01") == 0 || strcmp(accountType, "fixed02") == 0 || strcmp(accountType, "fixed03") == 0)
+    {
         printf("Transactions are not allowed for this account type.\n");
         return;
     }
@@ -556,29 +609,39 @@ void makeTransaction(struct User u, sqlite3 *db) {
     scanf("%lf", &amount);
 
     // Step 6: Perform Transaction
-    if (choice == 1) {
-        if (amount <= balance) {
+    if (choice == 1)
+    {
+        if (amount <= balance)
+        {
             balance -= amount;
-        } else {
+        }
+        else
+        {
             printf("Insufficient balance.\n");
             return;
         }
-    } else if ((choice == 2)) {
+    }
+    else if ((choice == 2))
+    {
         balance += amount;
-    } else {
+    }
+    else
+    {
         printf("Invalid transaction type.\n");
         return;
     }
 
     // Step 7: Update Database
-    if (sqlite3_prepare_v2(db, sql_update, -1, &stmt_update, 0) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, sql_update, -1, &stmt_update, 0) != SQLITE_OK)
+    {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
     }
     sqlite3_bind_double(stmt_update, 1, balance);
     sqlite3_bind_int(stmt_update, 2, accID);
 
-    if (sqlite3_step(stmt_update) != SQLITE_DONE) {
+    if (sqlite3_step(stmt_update) != SQLITE_DONE)
+    {
         fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
     }
 
@@ -592,4 +655,3 @@ void makeTransaction(struct User u, sqlite3 *db) {
     // Step 9: Return to Main Menu
     success(u, db);
 }
-
