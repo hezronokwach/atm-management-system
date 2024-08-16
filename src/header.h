@@ -29,6 +29,7 @@ struct User
 
 // authentication functions
 void loginMenu(sqlite3 *db);
+int getUserId(const char *username, sqlite3 *db);
 void registerAcc(sqlite3 *db);
 //void registerMenu(char a[50], char pass[50]);
 const char *getPassword(const char *username, sqlite3 *db) ;
@@ -41,6 +42,8 @@ void update(struct User u, sqlite3 *db);
 void checkAccountsDetails(int accId, sqlite3 *db);
 void deleteAccount(int accId, sqlite3 *db);
 void transferAcc(struct User u, sqlite3 *db);
+//void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db);
 void makeTransaction(struct User u, sqlite3 *db);
+
 
 #endif // HEADER_H
