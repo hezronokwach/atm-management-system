@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sqlite3.h>
 #include "header.h"
+#include <ctype.h>
 
 
 // Encryption function (XOR-based for demonstration purposes)
@@ -130,21 +131,54 @@ const char *getPassword(const char *username, sqlite3 *db) {
     sqlite3_finalize(stmt_pass); // Finalize the statement
     return password; // Return the allocated password or NULL if not found
 }
+#define MAX_USERNAME_LENGTH 20
+#define MAX_PASSWORD_LENGTH 20
+#define BUFFER_SIZE 1024
+
 
 void registerAcc(sqlite3 *db) {
     struct User u;
     const char *sql_check = "SELECT name FROM users WHERE name = ?;";
     const char *sql_insert = "INSERT INTO users (name, password) VALUES (?, ?);";
-    char encryptedPassword[50];
+    char encryptedPassword[500];
     const char *key = "mysecretkey";
+    char buffer[BUFFER_SIZE];
 
     sqlite3_stmt *stmt_check;
     sqlite3_stmt *stmt_insert;
 
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Name:");
-    printf("\nEnter your username: ");
-    scanf("%s", u.name);
+
+    // Clear input buffer before reading username
+    clearInputBuffer();
+
+    // Get username
+    int valid_username = 0;
+    while (!valid_username) {
+        printf("\nEnter your username: ");
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+            printf("Error reading input.\n");
+            continue;
+        }
+        buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+        if (strlen(buffer) > MAX_USERNAME_LENGTH) {
+            printf("Username is too long. Maximum %d characters allowed.\n", MAX_USERNAME_LENGTH);
+            continue;
+        }
+
+        valid_username = 1;
+        for (int i = 0; buffer[i] != '\0'; i++) {
+            if (!isalnum(buffer[i]) && buffer[i] != '_') {
+                printf("Username should contain only letters, numbers, and underscores.\n");
+                valid_username = 0;
+                break;
+            }
+        }
+    }
+    strncpy(u.name, buffer, MAX_USERNAME_LENGTH);
+    u.name[MAX_USERNAME_LENGTH - 1] = '\0';
 
     // Check if the username already exists
     if (sqlite3_prepare_v2(db, sql_check, -1, &stmt_check, 0) != SQLITE_OK) {
@@ -154,7 +188,6 @@ void registerAcc(sqlite3 *db) {
 
     sqlite3_bind_text(stmt_check, 1, u.name, -1, SQLITE_STATIC);
     
-    // Execute the check statement
     if (sqlite3_step(stmt_check) == SQLITE_ROW) {
         printf("Account already exists\n\n");
         sqlite3_finalize(stmt_check);
@@ -162,8 +195,25 @@ void registerAcc(sqlite3 *db) {
     }
     sqlite3_finalize(stmt_check);
 
-    printf("\nCreate the password: ");
-    scanf("%s", u.password);
+    // Get password
+    int valid_password = 0;
+    while (!valid_password) {
+        printf("\nCreate the password: ");
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+            printf("Error reading input.\n");
+            continue;
+        }
+        buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+        if (strlen(buffer) > MAX_PASSWORD_LENGTH) {
+            printf("Password is too long. Maximum %d characters allowed.\n", MAX_PASSWORD_LENGTH);
+            continue;
+        }
+
+        valid_password = 1;
+    }
+    strncpy(u.password, buffer, MAX_PASSWORD_LENGTH);
+    u.password[MAX_PASSWORD_LENGTH - 1] = '\0';
 
     // Encrypt the password before storing it
     encrypt(u.password, encryptedPassword, key);
