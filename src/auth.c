@@ -60,9 +60,6 @@ void loginMenu(sqlite3 *db) {
     // Decrypt the retrieved password
     decrypt(retrieved, decryptedPassword, key);
 
-    // Debugging output
-    printf("Decrypted Password: %s\n", decryptedPassword); // Log decrypted password
-    printf("Entered Password: %s\n", u.password); // Log entered password
 
     // Compare the decrypted password with the entered password
     if (strcmp(decryptedPassword, u.password) == 0) {
@@ -75,7 +72,7 @@ void loginMenu(sqlite3 *db) {
             return;
         }
 
-        mainMenu(u, db);
+        mainMenu(&u, db);
     } else {
         printf("Wrong password\n");
         return;
@@ -171,7 +168,6 @@ void registerAcc(sqlite3 *db) {
     // Encrypt the password before storing it
     encrypt(u.password, encryptedPassword, key);
 
-    // Prepare the insert statement
     if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) != SQLITE_OK) {
         fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
         return;
@@ -188,6 +184,16 @@ void registerAcc(sqlite3 *db) {
     }
     sqlite3_finalize(stmt_insert);
 
+    // Get the ID of the newly inserted user
+    int userId = sqlite3_last_insert_rowid(db);
+
     printf("✔ Account registered successfully!\n");
-    mainMenu(u, db);
+    printf("Debug: Account created with user ID %d\n", userId);
+
+    // Verify the user ID in the database
+    int verifiedId = getUserId(u.name, db);
+    printf("Debug: Verified user ID in database: %d\n", verifiedId);
+
+    u.id = userId;  // Set the user ID in the User struct
+    mainMenu(&u, db);
 }
