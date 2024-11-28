@@ -22,6 +22,8 @@ void mainMenu(struct User *u, sqlite3 *db)
     switch (option)
     {
     case 1:
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
         createNewAcc(*u, db);
         break;
     case 2:
