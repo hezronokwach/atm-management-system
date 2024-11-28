@@ -10,21 +10,21 @@ struct Record
 {
     int id;
     int userId;
-    char name[100];
-    char country[100];
-    int phone;
+    char name[20];
+    char country[21];
+    int phone;// max 12 digits
     char accountType[10];
-    int accountNbr;
-    double amount;
+    int accountNbr;// max 12 digits
+    double amount; // max 10 digits
     char deposit_date[11];
     char withdraw_date[11];
-};
+}; 
 
 struct User
 {
     int id;
-    char name[50];
-    char password[50];
+    char name[20];
+    char password[20];
 };
 
 // authentication functions
@@ -36,11 +36,11 @@ const char *getPassword(const char *username, sqlite3 *db) ;
 
 // system function
 void createNewAcc(struct User u, sqlite3 *db);
-void mainMenu(struct User u, sqlite3 *db);
+void mainMenu(struct User *u, sqlite3 *db);
 void checkAllAccounts(struct User u,sqlite3 *db);
 void update(struct User u, sqlite3 *db);
-void checkAccountsDetails(int accId, sqlite3 *db);
-void deleteAccount(int accId, sqlite3 *db);
+void checkAccountsDetails(struct User *u, sqlite3 *db);
+void deleteAccount(struct User *u, sqlite3 *db);
 void transferAcc(struct User u, sqlite3 *db);
 //void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db);
 void makeTransaction(struct User u, sqlite3 *db);
