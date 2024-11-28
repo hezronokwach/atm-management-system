@@ -72,64 +72,51 @@ invalid:
 }
 
 // Helper function to validate date format
-int validateDate(const char *date)
-{
+int isLeapYear(int year) {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+int validateDate(const char *date) {
     struct tm tm;
-    return (strptime(date, "%Y-%m-%d", &tm) != NULL);
+    if (strptime(date, "%Y-%m-%d", &tm) == NULL) {
+        return 0; // Invalid format
+    }
+
+    int year = tm.tm_year + 1900;
+    int month = tm.tm_mon + 1;
+    int day = tm.tm_mday;
+
+    // Check year range (assuming a reasonable range)
+    if (year < 1900 || year > 2100) {
+        return 0;
+    }
+
+    // Check month range
+    if (month < 1 || month > 12) {
+        return 0;
+    }
+
+    // Check day range
+    int maxDay;
+    switch (month) {
+        case 4: case 6: case 9: case 11:
+            maxDay = 30;
+            break;
+        case 2:
+            maxDay = isLeapYear(year) ? 29 : 28;
+            break;
+        default:
+            maxDay = 31;
+    }
+
+    if (day < 1 || day > maxDay) {
+        return 0;
+    }
+
+    return 1; // Valid date
 }
 
-// Helper function to validate integer input
-int getIntegerInput()
-{
-    char input[100];
-    int value;
-    while (1)
-    {
-        if (fgets(input, sizeof(input), stdin) == NULL)
-        {
-            return -1; // Error in input
-        }
-        if (sscanf(input, "%d", &value) == 1)
-        {
-            return value;
-        }
-        printf("Invalid input. Please enter a number: ");
-    }
-}
 
-bool validateIntegerInput(int *value)
-{
-    char buffer[50];
-    if (scanf("%49s", buffer) != 1)
-    {
-        return false; // Invalid input
-    }
-    char *endptr;
-    long int_value = strtol(buffer, &endptr, 10);
-    if (*endptr != '\0')
-    {
-        return false; // Not a valid integer
-    }
-    *value = (int)int_value; // Store the valid integer
-    return true;
-}
-
-bool validateDoubleInput(double *value)
-{
-    char buffer[50];
-    if (scanf("%49s", buffer) != 1)
-    {
-        return false; // Invalid input
-    }
-    char *endptr;
-    double double_value = strtod(buffer, &endptr);
-    if (*endptr != '\0')
-    {
-        return false; // Not a valid double
-    }
-    *value = double_value; // Store the valid double
-    return true;
-}
 void createNewAcc(struct User u, sqlite3 *db)
 {
     struct Record r;
@@ -158,6 +145,11 @@ void createNewAcc(struct User u, sqlite3 *db)
             printf("Invalid date format. Please use YYYY-MM-DD.\n");
             continue;
         }
+        if (strlen(buffer) > sizeof(r.deposit_date) - 1)
+        {
+            printf("Date input too long. Maximum length is %zu characters.\n", sizeof(r.deposit_date) - 1);
+            continue;
+        }
         strcpy(r.deposit_date, buffer);
         break;
     } while (1);
@@ -165,37 +157,40 @@ void createNewAcc(struct User u, sqlite3 *db)
     // Account number input
     do
     {
-        int valid_account = 0;
-        char account_str[20];
-        while (!valid_account)
+        char account_str[500]; // Increased buffer size to handle longer inputs
+        printf("\nEnter the account number (max 12 digits): ");
+        if (fgets(account_str, sizeof(account_str), stdin) == NULL)
         {
-            printf("\nEnter the account number: ");
-            if (scanf("%19s", account_str) != 1)
-            {
-                printf("Invalid input. Please enter a valid account number.\n");
-                clearInputBuffer();
-                continue;
-            }
-
-            // Check if the input contains only digits
-            valid_account = 1;
-            for (int i = 0; account_str[i] != '\0'; i++)
-            {
-                if (!isdigit(account_str[i]))
-                {
-                    valid_account = 0;
-                    break;
-                }
-            }
-
-            if (!valid_account)
-            {
-                printf("Invalid account number. Please enter only digits.\n");
-                continue;
-            }
-
-            r.accountNbr = atoi(account_str);
+            printf("Error reading input.\n");
+            continue;
         }
+        account_str[strcspn(account_str, "\n")] = 0; // Remove newline
+
+        if (strlen(account_str) > 12)
+        {
+            printf("Account number too long. Maximum length is 12 digits.\n");
+            clearInputBuffer(); // Clear any remaining input
+            continue;
+        }
+
+        // Check if the input contains only digits
+        int valid_account = 1;
+        for (int i = 0; account_str[i] != '\0'; i++)
+        {
+            if (!isdigit(account_str[i]))
+            {
+                valid_account = 0;
+                break;
+            }
+        }
+
+        if (!valid_account)
+        {
+            printf("Invalid account number. Please enter only digits.\n");
+            continue;
+        }
+
+        r.accountNbr = atoi(account_str);
 
         // Check if account number already exists
         if (sqlite3_prepare_v2(db, sql_check, -1, &stmt_check, 0) != SQLITE_OK)
@@ -228,25 +223,30 @@ void createNewAcc(struct User u, sqlite3 *db)
         break; // Valid account number entered
     } while (1);
 
-    clearInputBuffer(); // Clear any remaining newline characters
-
     // Country input
-    int valid_country = 0;
-    while (!valid_country)
+    do
     {
-        printf("\nEnter the country: ");
-        if (fgets(r.country, sizeof(r.country), stdin) == NULL)
+        char country_str[500]; // Increased buffer size to handle longer inputs
+        printf("\nEnter the country (max 20 characters): ");
+        if (fgets(country_str, sizeof(country_str), stdin) == NULL)
         {
-            printf("Error reading input. Please try again.\n");
+            printf("Error reading input.\n");
             continue;
         }
-        r.country[strcspn(r.country, "\n")] = 0; // Remove newline
+        country_str[strcspn(country_str, "\n")] = 0; // Remove newline
+
+        if (strlen(country_str) > 20)
+        {
+            printf("Country name too long. Maximum length is 20 characters.\n");
+            clearInputBuffer(); // Clear any remaining input
+            continue;
+        }
 
         // Check if the input contains only letters and spaces
-        valid_country = 1;
-        for (int i = 0; r.country[i] != '\0'; i++)
+        int valid_country = 1;
+        for (int i = 0; country_str[i] != '\0'; i++)
         {
-            if (!isalpha(r.country[i]) && !isspace(r.country[i]))
+            if (!isalpha(country_str[i]) && !isspace(country_str[i]))
             {
                 valid_country = 0;
                 break;
@@ -256,24 +256,34 @@ void createNewAcc(struct User u, sqlite3 *db)
         if (!valid_country)
         {
             printf("Invalid country name. Please enter only letters and spaces.\n");
+            continue;
         }
-    }
+
+        strncpy(r.country, country_str, sizeof(r.country) - 1);
+        r.country[sizeof(r.country) - 1] = '\0'; // Ensure null-termination
+        break;
+    } while (1);
 
     // Phone number input
-    int valid_phone = 0;
-    char phone_str[20];
-    while (!valid_phone)
+    do
     {
-        printf("\nEnter the phone number: ");
-        if (scanf("%19s", phone_str) != 1)
+        char phone_str[500];
+        printf("\nEnter the phone number (max 12 digits): ");
+        if (fgets(phone_str, sizeof(phone_str), stdin) == NULL)
         {
-            printf("Invalid input. Please enter a valid phone number.\n");
-            clearInputBuffer();
+            printf("Error reading input. Please try again.\n");
+            continue;
+        }
+        phone_str[strcspn(phone_str, "\n")] = 0; // Remove newline
+
+        if (strlen(phone_str) > 12)
+        {
+            printf("Phone number too long. Maximum length is 12 digits.\n");
             continue;
         }
 
         // Check if the input contains only digits
-        valid_phone = 1;
+        int valid_phone = 1;
         for (int i = 0; phone_str[i] != '\0'; i++)
         {
             if (!isdigit(phone_str[i]))
@@ -286,21 +296,18 @@ void createNewAcc(struct User u, sqlite3 *db)
         if (!valid_phone)
         {
             printf("Invalid phone number. Please enter only digits.\n");
+            continue;
         }
-        else
-        {
-            r.phone = atoi(phone_str);
-        }
-    }
 
-    clearInputBuffer(); // Clear any remaining newline characters
+        r.phone = atoi(phone_str);
+        break;
+    } while (1);
 
     // Amount input
-    int valid_amount = 0;
-    char amount_str[20];
-    while (!valid_amount)
+    do
     {
-        printf("\nEnter amount to deposit: $");
+        char amount_str[500];
+        printf("\nEnter amount to deposit (max 10 digits): $");
         if (fgets(amount_str, sizeof(amount_str), stdin) == NULL)
         {
             printf("Error reading input. Please try again.\n");
@@ -308,38 +315,47 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         amount_str[strcspn(amount_str, "\n")] = 0; // Remove newline
 
+        if (strlen(amount_str) > 10)
+        {
+            printf("Amount too long. Maximum length is 10 digits.\n");
+            continue;
+        }
+
         // Check if the input is a valid float
         char *endptr;
         r.amount = strtod(amount_str, &endptr);
         if (*endptr != '\0' || r.amount < 0)
         {
             printf("Invalid amount. Please enter a positive number.\n");
-        }
-        else
-        {
-            valid_amount = 1;
-        }
-    }
-
-    // Account type input with validation
-    // Account type input with validation int valid_account_type = 0;
-    int valid_account_type = 0;
-    while (!valid_account_type)
-    {
-        printf("\nChoose the type of account:\n\t-> savings\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice: ");
-        if (fgets(r.accountType, sizeof(r.accountType), stdin) == NULL)
-        {
-            printf("Error reading input.\n");
-            clearInputBuffer();
             continue;
         }
-        r.accountType[strcspn(r.accountType, "\n")] = 0; // Remove newline
+        break;
+    } while (1);
+
+    // Account type input with validation
+    do
+    {
+        char accountType_str[500]; // Increased buffer size to handle longer inputs
+        printf("\nChoose the type of account:\n\t-> savings\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice: ");
+        if (fgets(accountType_str, sizeof(accountType_str), stdin) == NULL)
+        {
+            printf("Error reading input.\n");
+            continue;
+        }
+        accountType_str[strcspn(accountType_str, "\n")] = 0; // Remove newline
+
+        if (strlen(accountType_str) > 9)
+        {
+            printf("Account type too long. Maximum length is 9 characters.\n");
+            clearInputBuffer(); // Clear any remaining input
+            continue;
+        }
 
         // Check if the input contains only letters and numbers
-        valid_account_type = 1;
-        for (int i = 0; r.accountType[i] != '\0'; i++)
+        int valid_account_type = 1;
+        for (int i = 0; accountType_str[i] != '\0'; i++)
         {
-            if (!isalpha(r.accountType[i]) && !isdigit(r.accountType[i]))
+            if (!isalpha(accountType_str[i]) && !isdigit(accountType_str[i]))
             {
                 valid_account_type = 0;
                 break;
@@ -352,17 +368,20 @@ void createNewAcc(struct User u, sqlite3 *db)
             continue;
         }
 
-        if (strcmp(r.accountType, "savings") != 0 &&
-            strcmp(r.accountType, "current") != 0 &&
-            strcmp(r.accountType, "fixed01") != 0 &&
-            strcmp(r.accountType, "fixed02") != 0 &&
-            strcmp(r.accountType, "fixed03") != 0)
+        if (strcmp(accountType_str, "savings") != 0 &&
+            strcmp(accountType_str, "current") != 0 &&
+            strcmp(accountType_str, "fixed01") != 0 &&
+            strcmp(accountType_str, "fixed02") != 0 &&
+            strcmp(accountType_str, "fixed03") != 0)
         {
             printf("Invalid account type. Please choose from the provided options.\n");
-            valid_account_type = 0;
             continue;
         }
-    }
+
+        strncpy(r.accountType, accountType_str, sizeof(r.accountType) - 1);
+        r.accountType[sizeof(r.accountType) - 1] = '\0'; // Ensure null-termination
+        break;
+    } while (1);
 
     // Prepare and execute insert statement
     if (sqlite3_prepare_v2(db, sql_insert, -1, &stmt_insert, 0) != SQLITE_OK)
@@ -391,14 +410,13 @@ void createNewAcc(struct User u, sqlite3 *db)
     sqlite3_finalize(stmt_insert);
     success(u, db);
 }
-
 void clearInputBuffer()
 {
     int c;
     while ((c = getchar()) != '\n' && c != EOF)
-        ;
+    {
+    }
 }
-
 void checkAllAccounts(struct User u, sqlite3 *db)
 {
     const char *sql_retrieve =
