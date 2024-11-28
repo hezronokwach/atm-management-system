@@ -33,6 +33,7 @@ int getUserId(const char *username, sqlite3 *db);
 void registerAcc(sqlite3 *db);
 //void registerMenu(char a[50], char pass[50]);
 const char *getPassword(const char *username, sqlite3 *db) ;
+void clearInputBuffer();
 
 // system function
 void createNewAcc(struct User u, sqlite3 *db);
