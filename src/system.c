@@ -492,8 +492,8 @@ void update(struct User u, sqlite3 *db)
 {
     int accID;
     int choice;
-    char newcountry[100]; // Use fixed-size array for country
-    char newphone[20];    // Use a string to handle phone number input
+    char newcountry[500];
+    char newphone[500];
     const char *sql_select = "SELECT * FROM accounts WHERE account_number = ? AND user_id = ?;";
     const char *sql_update_country = "UPDATE accounts SET country = ? WHERE account_number = ? AND user_id = ?;";
     const char *sql_update_phone = "UPDATE accounts SET phone_number = ? WHERE account_number = ? AND user_id = ?;";
@@ -502,153 +502,133 @@ void update(struct User u, sqlite3 *db)
     sqlite3_stmt *stmt_update_phone;
     sqlite3_stmt *stmt_update_country;
 
-    system("clear");
-    printf("\nEnter your account number you want to update: ");
-    if (scanf("%d", &accID) != 1)
-    {
-        printf("Invalid input. Please enter a valid account number.\n");
-        while (getchar() != '\n')
-            ; // Clear input buffer
-        return;
-    }
+    while (1) {
+        system("clear");
+        printf("\nEnter your account number you want to update: ");
+        if (scanf("%d", &accID) != 1) {
+            clearInputBuffer();
+            printf("Invalid input. Please enter a valid account number.\n");
+            continue;
+        }
 
-    // Prepare the select statement
-    if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_retrieve, 0) != SQLITE_OK)
-    {
-        fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
-        return;
-    }
-    sqlite3_bind_int(stmt_retrieve, 1, accID);
-    sqlite3_bind_int(stmt_retrieve, 2, u.id); // Ensure the account belongs to the current user
+        if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_retrieve, 0) != SQLITE_OK) {
+            fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+            return;
+        }
 
-    // Execute the select statement
-    if (sqlite3_step(stmt_retrieve) != SQLITE_ROW)
-    {
-        printf("No account found with ID %d for this user\n", accID);
-        sqlite3_finalize(stmt_retrieve);
-        return;
-    }
+        sqlite3_bind_int(stmt_retrieve, 1, accID);
+        sqlite3_bind_int(stmt_retrieve, 2, u.id);
 
-    printf("\nWhich field do you want to update:");
-    printf("\n1 -- Phone number\n");
-    printf("2 -- Country\n");
-    if (scanf("%d", &choice) != 1)
-    {
-        printf("Invalid input. Please enter a valid choice.\n");
-        while (getchar() != '\n')
-            ; // Clear input buffer
-        sqlite3_finalize(stmt_retrieve);
-        return;
-    }
+        if (sqlite3_step(stmt_retrieve) == SQLITE_ROW) {
+            printf("\nChoose what you want to update:");
+            printf("\n1. Phone");
+            printf("\n2. Country");
+            printf("\nEnter your choice: ");
+            scanf("%d", &choice);
+            clearInputBuffer();
 
-    if (choice == 1)
-    {
-        int valid_phone = 0;
-        while (!valid_phone)
-        {
-            printf("Enter new phone number: ");
-            if (scanf("%19s", newphone) != 1)
-            {
-                printf("Invalid input. Please enter a valid phone number.\n");
-                while (getchar() != '\n')
-                    ; // Clear input buffer
-                continue;
-            }
+            switch (choice) {
+                case 1: {
+                    int valid_phone = 0;
+                    while (!valid_phone) {
+                        printf("Enter the new phone number: ");
+                        if (fgets(newphone, sizeof(newphone), stdin) == NULL) {
+                            printf("Error reading input.\n");
+                            continue;
+                        }
+                        newphone[strcspn(newphone, "\n")] = 0; // Remove newline
 
-            // Check if the input contains only digits
-            valid_phone = 1;
-            for (int i = 0; newphone[i] != '\0'; i++)
-            {
-                if (!isdigit(newphone[i]))
-                {
-                    valid_phone = 0;
+                        if (strlen(newphone) > 15) {
+                            printf("Phone number is too long. Maximum 15 digits allowed.\n");
+                            continue;
+                        }
+
+                        valid_phone = 1;
+                        for (int i = 0; newphone[i] != '\0'; i++) {
+                            if (!isdigit(newphone[i])) {
+                                printf("Phone number should contain only digits.\n");
+                                valid_phone = 0;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (sqlite3_prepare_v2(db, sql_update_phone, -1, &stmt_update_phone, 0) != SQLITE_OK) {
+                        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+                        return;
+                    }
+                    sqlite3_bind_text(stmt_update_phone, 1, newphone, -1, SQLITE_STATIC);
+                    sqlite3_bind_int(stmt_update_phone, 2, accID);
+                    sqlite3_bind_int(stmt_update_phone, 3, u.id);
+                    if (sqlite3_step(stmt_update_phone) != SQLITE_DONE) {
+                        fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+                    } else {
+                        printf("Phone number updated successfully!\n");
+                    }
+                    sqlite3_finalize(stmt_update_phone);
                     break;
                 }
+                case 2: {
+                    int valid_country = 0;
+                    while (!valid_country) {
+                        printf("Enter the new country: ");
+                        if (fgets(newcountry, sizeof(newcountry), stdin) == NULL) {
+                            printf("Error reading input.\n");
+                            continue;
+                        }
+                        newcountry[strcspn(newcountry, "\n")] = 0; // Remove newline
+
+                        if (strlen(newcountry) > 50) {
+                            printf("Country name is too long. Maximum 50 characters allowed.\n");
+                            continue;
+                        }
+
+                        valid_country = 1;
+                        for (int i = 0; newcountry[i] != '\0'; i++) {
+                            if (!isalpha(newcountry[i]) && newcountry[i] != ' ') {
+                                printf("Country name should contain only letters and spaces.\n");
+                                valid_country = 0;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (sqlite3_prepare_v2(db, sql_update_country, -1, &stmt_update_country, 0) != SQLITE_OK) {
+                        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+                        return;
+                    }
+                    sqlite3_bind_text(stmt_update_country, 1, newcountry, -1, SQLITE_STATIC);
+                    sqlite3_bind_int(stmt_update_country, 2, accID);
+                    sqlite3_bind_int(stmt_update_country, 3, u.id);
+                    if (sqlite3_step(stmt_update_country) != SQLITE_DONE) {
+                        fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+                    } else {
+                        printf("Country updated successfully!\n");
+                    }
+                    sqlite3_finalize(stmt_update_country);
+                    break;
+                }
+                default:
+                    printf("Invalid choice.\n");
+                    break;
             }
-
-            if (!valid_phone)
-            {
-                printf("Invalid phone number. Please enter only digits.\n");
-            }
+        } else {
+            printf("Account not found!\n");
         }
-
-        // Prepare the update phone statement
-        if (sqlite3_prepare_v2(db, sql_update_phone, -1, &stmt_update_phone, 0) != SQLITE_OK)
-        {
-            fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
-            sqlite3_finalize(stmt_retrieve);
-            return;
-        }
-        sqlite3_bind_text(stmt_update_phone, 1, newphone, -1, SQLITE_STATIC);
-        sqlite3_bind_int(stmt_update_phone, 2, accID);
-        sqlite3_bind_int(stmt_update_phone, 3, u.id);
-
-        // Execute the update phone statement
-        if (sqlite3_step(stmt_update_phone) != SQLITE_DONE)
-        {
-            fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
-            sqlite3_finalize(stmt_retrieve);
-            sqlite3_finalize(stmt_update_phone);
-            return;
-        }
-        else
-        {
-            printf("Phone number successfully updated\n");
-        }
-
-        // Finalize the statements
         sqlite3_finalize(stmt_retrieve);
-        sqlite3_finalize(stmt_update_phone);
-    }
-    else if (choice == 2)
-    {
-        printf("Enter new country: ");
-        if (scanf("%99s", newcountry) != 1)
-        {
-            printf("Invalid input. Please enter a valid country name.\n");
-            while (getchar() != '\n')
-                ; // Clear input buffer
-            sqlite3_finalize(stmt_retrieve);
-            return;
-        }
 
-        // Prepare the update country statement
-        if (sqlite3_prepare_v2(db, sql_update_country, -1, &stmt_update_country, 0) != SQLITE_OK)
-        {
-            fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
-            sqlite3_finalize(stmt_retrieve);
-            return;
+        char continue_choice;
+        printf("\nDo you want to perform another update operation? (y/n): ");
+        scanf(" %c", &continue_choice);
+        clearInputBuffer();
+        if (continue_choice != 'y' && continue_choice != 'Y') {
+            break;
         }
-        sqlite3_bind_text(stmt_update_country, 1, newcountry, -1, SQLITE_STATIC);
-        sqlite3_bind_int(stmt_update_country, 2, accID);
-        sqlite3_bind_int(stmt_update_country, 3, u.id);
-
-        // Execute the update country statement
-        if (sqlite3_step(stmt_update_country) != SQLITE_DONE)
-        {
-            fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
-            sqlite3_finalize(stmt_retrieve);
-            sqlite3_finalize(stmt_update_country);
-            return;
-        }
-        else
-        {
-            printf("Country successfully updated\n");
-        }
-
-        // Finalize the statements
-        sqlite3_finalize(stmt_retrieve);
-        sqlite3_finalize(stmt_update_country);
     }
-    else
-    {
-        printf("Wrong choice\n");
-        sqlite3_finalize(stmt_retrieve);
-        return;
-    }
-    success(u, db);
+
+    printf("\nReturning to main menu...\n");
+    mainMenu(&u, db);
 }
-
 void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db)
 {
     const char *sql_update_account = "UPDATE accounts SET user_id = (SELECT id FROM users WHERE name = ?) WHERE account_number = ?;";
