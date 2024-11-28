@@ -72,13 +72,16 @@ invalid:
 }
 
 // Helper function to validate date format
-int isLeapYear(int year) {
+int isLeapYear(int year)
+{
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
-int validateDate(const char *date) {
+int validateDate(const char *date)
+{
     struct tm tm;
-    if (strptime(date, "%Y-%m-%d", &tm) == NULL) {
+    if (strptime(date, "%Y-%m-%d", &tm) == NULL)
+    {
         return 0; // Invalid format
     }
 
@@ -87,35 +90,41 @@ int validateDate(const char *date) {
     int day = tm.tm_mday;
 
     // Check year range (assuming a reasonable range)
-    if (year < 1900 || year > 2100) {
+    if (year < 1900 || year > 2100)
+    {
         return 0;
     }
 
     // Check month range
-    if (month < 1 || month > 12) {
+    if (month < 1 || month > 12)
+    {
         return 0;
     }
 
     // Check day range
     int maxDay;
-    switch (month) {
-        case 4: case 6: case 9: case 11:
-            maxDay = 30;
-            break;
-        case 2:
-            maxDay = isLeapYear(year) ? 29 : 28;
-            break;
-        default:
-            maxDay = 31;
+    switch (month)
+    {
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        maxDay = 30;
+        break;
+    case 2:
+        maxDay = isLeapYear(year) ? 29 : 28;
+        break;
+    default:
+        maxDay = 31;
     }
 
-    if (day < 1 || day > maxDay) {
+    if (day < 1 || day > maxDay)
+    {
         return 0;
     }
 
     return 1; // Valid date
 }
-
 
 void createNewAcc(struct User u, sqlite3 *db)
 {
@@ -1020,6 +1029,12 @@ void makeTransaction(struct User u, sqlite3 *db)
                 printf("Invalid choice. Please enter 1, 2, or 3.\n");
                 choice = 0; // Set to invalid choice to repeat the loop
             }
+            else
+            {
+                // Clear the input buffer after a valid choice
+                while (getchar() != '\n')
+                    ;
+            }
         } while (choice == 0);
 
         if (choice == 3)
@@ -1034,11 +1049,26 @@ void makeTransaction(struct User u, sqlite3 *db)
         while (!valid_amount)
         {
             printf("Enter amount: $");
-            if (scanf("%19s", amountStr) != 1)
+            if (fgets(amountStr, sizeof(amountStr), stdin) == NULL)
             {
-                printf("Invalid input. Please enter a valid amount.\n");
-                while (getchar() != '\n')
-                    ; // Clear input buffer
+                printf("Error reading input.\n");
+                continue;
+            }
+
+            // Remove newline character if present
+            size_t len = strlen(amountStr);
+            if (len > 0 && amountStr[len - 1] == '\n')
+            {
+                amountStr[len - 1] = '\0';
+            }
+            else if (len == sizeof(amountStr) - 1)
+            {
+                // Input was too long
+                printf("Input too long. Please enter a smaller amount.\n");
+                // Clear the input buffer
+                int c;
+                while ((c = getchar()) != '\n' && c != EOF)
+                    ;
                 continue;
             }
 
