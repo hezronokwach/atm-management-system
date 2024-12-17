@@ -847,7 +847,6 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
         double interest;
         int interestDay;
 
-        system("clear");
         printf("\nEnter the account number you want to check: ");
         if (scanf("%d", &accId) != 1)
         {
@@ -869,9 +868,17 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
         sqlite3_bind_int(stmt_select, 2, u->id);
 
         // Execute the statement and check for results
-        if (sqlite3_step(stmt_select) != SQLITE_ROW)
+        int stepResult = sqlite3_step(stmt_select);
+        if (stepResult != SQLITE_ROW)
         {
-            printf("No account found with ID %d for this user.\n", accId);
+            if (stepResult == SQLITE_DONE)
+            {
+                printf("No account found with ID %d for this user.\n", accId);
+            }
+            else
+            {
+                fprintf(stderr, "Error executing statement: %s\n", sqlite3_errmsg(db));
+            }
             sqlite3_finalize(stmt_select);
         }
         else
@@ -888,7 +895,6 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
             interestDay = atoi(&depositDate[8]); // Assuming depositDate is in YYYY-MM-DD format
 
             // Display account details
-            system("clear");
             printf("_____________________\n");
             printf("\nAccount number: %d\nDeposit Date: %s\nCountry: %s\nPhone number: %d\nAmount deposited: $%.2f\nType Of Account: %s\n",
                    accNumber, depositDate, country, phone, amount, accountType);

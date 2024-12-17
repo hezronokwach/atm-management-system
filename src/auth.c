@@ -31,8 +31,23 @@ void loginMenu(sqlite3 *db) {
 
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
-    printf("\nEnter your username: ");
-    scanf("%s", u.name);
+
+    // Get username
+    int valid_username = 0;
+    while (!valid_username) {
+        printf("\nEnter your username: ");
+        if (scanf("%s", u.name) != 1) {
+            printf("Error reading input.\n");
+            continue;
+        }
+
+        if (strlen(u.name) == 0) {
+            printf("Username cannot be empty.\n");
+            continue;
+        }
+
+        valid_username = 1;
+    }
 
     // Disabling echo for password input
     struct termios oflags, nflags;
@@ -45,8 +60,23 @@ void loginMenu(sqlite3 *db) {
         perror("tcsetattr");
         return;
     }
-    printf("\nEnter the password to login: ");
-    scanf("%s", u.password);
+
+    // Get password
+    int valid_password = 0;
+    while (!valid_password) {
+        printf("\nEnter the password to login: ");
+        if (scanf("%s", u.password) != 1) {
+            printf("Error reading input.\n");
+            continue;
+        }
+
+        if (strlen(u.password) == 0) {
+            printf("Password cannot be empty.\n");
+            continue;
+        }
+
+        valid_password = 1;
+    }
 
     // Restore terminal settings
     tcsetattr(fileno(stdin), TCSANOW, &oflags);
@@ -60,7 +90,6 @@ void loginMenu(sqlite3 *db) {
 
     // Decrypt the retrieved password
     decrypt(retrieved, decryptedPassword, key);
-
 
     // Compare the decrypted password with the entered password
     if (strcmp(decryptedPassword, u.password) == 0) {
@@ -163,6 +192,11 @@ void registerAcc(sqlite3 *db) {
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
+        if (strlen(buffer) == 0) {
+            printf("Username cannot be empty.\n");
+            continue;
+        }
+
         if (strlen(buffer) > MAX_USERNAME_LENGTH) {
             printf("Username is too long. Maximum %d characters allowed.\n", MAX_USERNAME_LENGTH);
             continue;
@@ -204,6 +238,11 @@ void registerAcc(sqlite3 *db) {
             continue;
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+        if (strlen(buffer) == 0) {
+            printf("Password cannot be empty.\n");
+            continue;
+        }
 
         if (strlen(buffer) > MAX_PASSWORD_LENGTH) {
             printf("Password is too long. Maximum %d characters allowed.\n", MAX_PASSWORD_LENGTH);
