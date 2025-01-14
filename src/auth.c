@@ -6,6 +6,9 @@
 #include "header.h"
 #include <ctype.h>
 
+#define MAX_USERNAME_LENGTH 20
+#define MAX_PASSWORD_LENGTH 20
+#define BUFFER_SIZE 1024
 
 // Encryption function (XOR-based for demonstration purposes)
 void encrypt(const char *input, char *output, const char *key) {
@@ -21,92 +24,6 @@ void encrypt(const char *input, char *output, const char *key) {
 // Decryption function (symmetric with encryption)
 void decrypt(const char *input, char *output, const char *key) {
     encrypt(input, output, key); // XOR encryption is symmetric
-}
-
-void loginMenu(sqlite3 *db) {
-    struct User u;
-    const char *retrieved;
-    char decryptedPassword[50];
-    const char *key = "mysecretkey";
-
-    system("clear");
-    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
-
-    // Get username
-    int valid_username = 0;
-    while (!valid_username) {
-        printf("\nEnter your username: ");
-        if (scanf("%s", u.name) != 1) {
-            printf("Error reading input.\n");
-            continue;
-        }
-
-        if (strlen(u.name) == 0) {
-            printf("Username cannot be empty.\n");
-            continue;
-        }
-
-        valid_username = 1;
-    }
-
-    // Disabling echo for password input
-    struct termios oflags, nflags;
-    tcgetattr(fileno(stdin), &oflags);
-    nflags = oflags;
-    nflags.c_lflag &= ~ECHO;
-    nflags.c_lflag |= ECHONL;
-
-    if (tcsetattr(fileno(stdin), TCSANOW, &nflags) != 0) {
-        perror("tcsetattr");
-        return;
-    }
-
-    // Get password
-    int valid_password = 0;
-    while (!valid_password) {
-        printf("\nEnter the password to login: ");
-        if (scanf("%s", u.password) != 1) {
-            printf("Error reading input.\n");
-            continue;
-        }
-
-        if (strlen(u.password) == 0) {
-            printf("Password cannot be empty.\n");
-            continue;
-        }
-
-        valid_password = 1;
-    }
-
-    // Restore terminal settings
-    tcsetattr(fileno(stdin), TCSANOW, &oflags);
-
-    // Retrieve the stored encrypted password
-    retrieved = getPassword(u.name, db);
-    if (retrieved == NULL) {
-        printf("User not found\n");
-        return;
-    }
-
-    // Decrypt the retrieved password
-    decrypt(retrieved, decryptedPassword, key);
-
-    // Compare the decrypted password with the entered password
-    if (strcmp(decryptedPassword, u.password) == 0) {
-        printf("Login successful\n");
-
-        // Retrieve and set the user ID after successful login
-        u.id = getUserId(u.name, db);
-        if (u.id == -1) {
-            printf("Failed to retrieve user ID.\n");
-            return;
-        }
-
-        mainMenu(&u, db);
-    } else {
-        printf("Wrong password\n");
-        return;
-    }
 }
 
 int getUserId(const char *username, sqlite3 *db) {
@@ -128,9 +45,6 @@ int getUserId(const char *username, sqlite3 *db) {
     sqlite3_finalize(stmt);
     return userId;
 }
-
-
-
 const char *getPassword(const char *username, sqlite3 *db) {
     const char *sql_password = "SELECT password FROM users WHERE name = ?;";
     sqlite3_stmt *stmt_pass;
@@ -160,10 +74,61 @@ const char *getPassword(const char *username, sqlite3 *db) {
     sqlite3_finalize(stmt_pass); // Finalize the statement
     return password; // Return the allocated password or NULL if not found
 }
-#define MAX_USERNAME_LENGTH 20
-#define MAX_PASSWORD_LENGTH 20
-#define BUFFER_SIZE 1024
 
+void loginMenu(sqlite3 *db) {
+    struct User u;
+    const char *retrieved;
+    char decryptedPassword[50];
+    const char *key = "mysecretkey";
+
+    system("clear");
+    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
+    printf("\nEnter your username: ");
+    scanf("%s", u.name);
+
+    // Disabling echo for password input
+    struct termios oflags, nflags;
+    tcgetattr(fileno(stdin), &oflags);
+    nflags = oflags;
+    nflags.c_lflag &= ~ECHO;
+    nflags.c_lflag |= ECHONL;
+
+    if (tcsetattr(fileno(stdin), TCSANOW, &nflags) != 0) {
+        perror("tcsetattr");
+        return;
+    }
+    printf("\nEnter the password to login: ");
+    scanf("%s", u.password);
+
+    // Restore terminal settings
+    tcsetattr(fileno(stdin), TCSANOW, &oflags);
+
+    // Retrieve the stored encrypted password
+    retrieved = getPassword(u.name, db);
+    if (retrieved == NULL) {
+        printf("User not found\n");
+        return;
+    }
+
+    // Decrypt the retrieved password
+    decrypt(retrieved, decryptedPassword, key);
+
+    // Compare the decrypted password with the entered password
+    if (strcmp(decryptedPassword, u.password) == 0) {
+        printf("Login successful\n");
+
+        // Retrieve and set the user ID after successful login
+        u.id = getUserId(u.name, db);
+        if (u.id == -1) {
+            printf("Failed to retrieve user ID.\n");
+            return;
+        }
+        mainMenu(&u, db);
+    } else {
+        printf("Wrong password\n");
+        return;
+    }
+}
 
 void registerAcc(sqlite3 *db) {
     struct User u;
@@ -277,7 +242,7 @@ void registerAcc(sqlite3 *db) {
     int userId = sqlite3_last_insert_rowid(db);
 
     printf("✔ Account registered successfully!\n");
-    printf("Debug: Account created with user ID %d\n", userId);
+    //printf("Debug: Account created with user ID %d\n", userId);
 
     // Verify the user ID in the database
     int verifiedId = getUserId(u.name, db);
