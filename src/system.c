@@ -50,27 +50,147 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db
 
 void success(struct User u, sqlite3 *db)
 {
-    int option;
+    char buffer[100];
     printf("\n✔ Success!\n\n");
-invalid:
-    printf("Enter 1 to go to the main menu and 0 to exit!\n");
-    scanf("%d", &option);
-    system("clear");
-    if (option == 1)
+
+    clearInputBuffer(); // Clear any previous input
+
+    while (1)
     {
-        mainMenu(&u, db);
-    }
-    else if (option == 0)
-    {
-        exit(1);
-    }
-    else
-    {
-        printf("Insert a valid operation!\n");
-        goto invalid;
+        printf("Enter 1 to go to the main menu and 0 to exit!\n");
+
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL)
+        {
+            printf("Error reading input.\n");
+            continue;
+        }
+        buffer[strcspn(buffer, "\n")] = 0;
+
+        // Check if input is exactly one character and is '0' or '1'
+        if (strlen(buffer) != 1 || (buffer[0] != '0' && buffer[0] != '1'))
+        {
+            printf("Invalid input! Please enter only 0 or 1.\n\n"); // Added newline
+            continue;                                               // This will immediately show the prompt again
+        }
+
+        if (buffer[0] == '0')
+        {
+            exit(1);
+        }
+        else
+        { // Must be '1' at this point
+            system("clear");
+            mainMenu(&u, db);
+        }
     }
 }
 
+int getValidAccountNumber()
+{
+    char buffer[100];
+    int accId;
+
+    while (1)
+    {
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL)
+        {
+            printf("Error reading input.\n");
+            printf("\nEnter the account number: ");
+            continue;
+        }
+
+        // Check if input is too long (no newline found)
+        if (strchr(buffer, '\n') == NULL)
+        {
+            // Clear the remaining input
+            while (getchar() != '\n')
+                ;
+            printf("Input too long. Please enter a number with maximum 12 digits.\n");
+            printf("\nEnter the account number: ");
+            continue;
+        }
+
+        // Remove newline
+        buffer[strcspn(buffer, "\n")] = 0;
+
+        // Check for empty input
+        if (strlen(buffer) == 0)
+        {
+            printf("Invalid input. Please enter a number.\n");
+            printf("\nEnter the account number: ");
+            continue;
+        }
+
+        // Check length (max 12 digits)
+        if (strlen(buffer) > 12)
+        {
+            printf("Number too long. Please enter maximum 12 digits.\n");
+            printf("\nEnter the account number: ");
+            continue;
+        }
+
+        // Check if input contains only digits
+        int valid = 1;
+        for (int i = 0; buffer[i] != '\0'; i++)
+        {
+            if (!isdigit(buffer[i]))
+            {
+                valid = 0;
+                break;
+            }
+        }
+
+        if (!valid)
+        {
+            printf("Invalid input. Please enter only digits.\n");
+            printf("\nEnter the account number: ");
+            continue;
+        }
+
+        // Convert to integer after validation
+        accId = atoi(buffer);
+
+        // Additional validation for reasonable account number range
+        if (accId <= 0)
+        {
+            printf("Invalid account number. Please enter a positive number.\n");
+            printf("\nEnter the account number: ");
+            continue;
+        }
+
+        return accId;
+    }
+}
+
+int getYesNoChoice(struct User *u, sqlite3 *db, const char *prompt)
+{
+    char continue_choice[10];
+
+    do
+    {
+        printf("\n%s (y/n): ", prompt);
+
+        if (fgets(continue_choice, sizeof(continue_choice), stdin) == NULL)
+        {
+            printf("Error reading input.\n");
+            continue;
+        }
+
+        // Remove newline
+        continue_choice[strcspn(continue_choice, "\n")] = 0;
+
+        // Check if input is exactly "y" or "n"
+        if (strcmp(continue_choice, "y") != 0 && strcmp(continue_choice, "n") != 0)
+        {
+            printf("Please enter a valid option ('y' or 'n')!\n");
+            continue;
+        }
+
+        // At this point, input must be exactly "y" or "n"
+        return (strcmp(continue_choice, "y") == 0) ? 1 : 0;
+
+    } while (1);
+}
 // Helper function to validate date format
 int isLeapYear(int year)
 {
@@ -80,24 +200,44 @@ int isLeapYear(int year)
 int validateDate(const char *date)
 {
     struct tm tm;
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    
     if (strptime(date, "%Y-%m-%d", &tm) == NULL)
     {
-        return 0; // Invalid format
+        printf("Invalid date format. Please use YYYY-MM-DD.\n");
+        return 0;
     }
 
     int year = tm.tm_year + 1900;
     int month = tm.tm_mon + 1;
     int day = tm.tm_mday;
 
-    // Check year range (assuming a reasonable range)
-    if (year < 1900 || year > 2100)
+    int current_year = current_time->tm_year + 1900;
+    int current_month = current_time->tm_mon + 1;
+    int current_day = current_time->tm_mday;
+
+    // Check if date is in the future
+    if (year > current_year || 
+        (year == current_year && month > current_month) ||
+        (year == current_year && month == current_month && day > current_day))
     {
+        printf("Error: Date cannot be in the future. Today is %d-%02d-%02d.\n", 
+               current_year, current_month, current_day);
+        return 0;
+    }
+
+    // Check year range
+    if (year < 1900)
+    {
+        printf("Error: Year must be 1900 or later.\n");
         return 0;
     }
 
     // Check month range
     if (month < 1 || month > 12)
     {
+        printf("Error: Month must be between 1 and 12.\n");
         return 0;
     }
 
@@ -105,25 +245,23 @@ int validateDate(const char *date)
     int maxDay;
     switch (month)
     {
-    case 4:
-    case 6:
-    case 9:
-    case 11:
-        maxDay = 30;
-        break;
-    case 2:
-        maxDay = isLeapYear(year) ? 29 : 28;
-        break;
-    default:
-        maxDay = 31;
+        case 4: case 6: case 9: case 11:
+            maxDay = 30;
+            break;
+        case 2:
+            maxDay = isLeapYear(year) ? 29 : 28;
+            break;
+        default:
+            maxDay = 31;
     }
 
     if (day < 1 || day > maxDay)
     {
+        printf("Error: Invalid day for the given month.\n");
         return 0;
     }
 
-    return 1; // Valid date
+    return 1;
 }
 
 void createNewAcc(struct User u, sqlite3 *db)
@@ -166,42 +304,40 @@ void createNewAcc(struct User u, sqlite3 *db)
     // Account number input
     do
     {
-        char account_str[500]; // Increased buffer size to handle longer inputs
         printf("\nEnter the account number (max 12 digits): ");
-        if (fgets(account_str, sizeof(account_str), stdin) == NULL)
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL)
         {
             printf("Error reading input.\n");
             continue;
         }
-        account_str[strcspn(account_str, "\n")] = 0; // Remove newline
+        buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
-        if (strlen(account_str) > 12)
+        if (strlen(buffer) > 12)
         {
             printf("Account number too long. Maximum length is 12 digits.\n");
-            clearInputBuffer(); // Clear any remaining input
             continue;
         }
 
-        // Check if the input contains only digits
-        int valid_account = 1;
-        for (int i = 0; account_str[i] != '\0'; i++)
+        // Check if input contains only digits
+        int valid = 1;
+        for (int i = 0; buffer[i] != '\0'; i++)
         {
-            if (!isdigit(account_str[i]))
+            if (!isdigit(buffer[i]))
             {
-                valid_account = 0;
+                valid = 0;
                 break;
             }
         }
 
-        if (!valid_account)
+        if (!valid)
         {
             printf("Invalid account number. Please enter only digits.\n");
             continue;
         }
 
-        r.accountNbr = atoi(account_str);
+        r.accountNbr = atoi(buffer);
 
-        // Check if account number already exists
+        // Check if account exists
         if (sqlite3_prepare_v2(db, sql_check, -1, &stmt_check, 0) != SQLITE_OK)
         {
             fprintf(stderr, "Error preparing statement: %s\n", sqlite3_errmsg(db));
@@ -210,8 +346,7 @@ void createNewAcc(struct User u, sqlite3 *db)
 
         sqlite3_bind_int(stmt_check, 1, r.accountNbr);
 
-        int step_result = sqlite3_step(stmt_check);
-        if (step_result == SQLITE_ROW)
+        if (sqlite3_step(stmt_check) == SQLITE_ROW)
         {
             int count = sqlite3_column_int(stmt_check, 0);
             if (count > 0)
@@ -221,55 +356,46 @@ void createNewAcc(struct User u, sqlite3 *db)
                 continue;
             }
         }
-        else
-        {
-            fprintf(stderr, "Error checking account number: %s\n", sqlite3_errmsg(db));
-            sqlite3_finalize(stmt_check);
-            return;
-        }
-
         sqlite3_finalize(stmt_check);
-        break; // Valid account number entered
+        break;
     } while (1);
 
-    // Country input
+    // Country input with validation
     do
     {
-        char country_str[500]; // Increased buffer size to handle longer inputs
         printf("\nEnter the country (max 20 characters): ");
-        if (fgets(country_str, sizeof(country_str), stdin) == NULL)
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL)
         {
             printf("Error reading input.\n");
             continue;
         }
-        country_str[strcspn(country_str, "\n")] = 0; // Remove newline
+        buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
-        if (strlen(country_str) > 20)
+        if (strlen(buffer) > 20)
         {
             printf("Country name too long. Maximum length is 20 characters.\n");
-            clearInputBuffer(); // Clear any remaining input
             continue;
         }
 
-        // Check if the input contains only letters and spaces
-        int valid_country = 1;
-        for (int i = 0; country_str[i] != '\0'; i++)
+        // Check if input contains only letters and spaces
+        int valid = 1;
+        for (int i = 0; buffer[i] != '\0'; i++)
         {
-            if (!isalpha(country_str[i]) && !isspace(country_str[i]))
+            if (!isalpha(buffer[i]) && !isspace(buffer[i]))
             {
-                valid_country = 0;
+                valid = 0;
                 break;
             }
         }
 
-        if (!valid_country)
+        if (!valid)
         {
             printf("Invalid country name. Please enter only letters and spaces.\n");
             continue;
         }
 
-        strncpy(r.country, country_str, sizeof(r.country) - 1);
-        r.country[sizeof(r.country) - 1] = '\0'; // Ensure null-termination
+        strncpy(r.country, buffer, sizeof(r.country) - 1);
+        r.country[sizeof(r.country) - 1] = '\0';
         break;
     } while (1);
 
@@ -417,7 +543,7 @@ void createNewAcc(struct User u, sqlite3 *db)
     }
 
     sqlite3_finalize(stmt_insert);
-    success(u, db);
+    mainMenu(&u, db);
 }
 void clearInputBuffer()
 {
@@ -501,19 +627,12 @@ void update(struct User u, sqlite3 *db)
     sqlite3_stmt *stmt_retrieve;
     sqlite3_stmt *stmt_update_phone;
     sqlite3_stmt *stmt_update_country;
-
+    clearInputBuffer();
+    system("clear");
     while (1)
     {
-        system("clear");
         printf("\nEnter your account number you want to update: ");
-        if (scanf("%d", &accID) != 1)
-        {
-            clearInputBuffer();
-            printf("Invalid input. Please enter a valid account number.\n");
-            continue;
-        }
-        clearInputBuffer();
-
+        accID = getValidAccountNumber();
         if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_retrieve, 0) != SQLITE_OK)
         {
             fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
@@ -645,27 +764,11 @@ void update(struct User u, sqlite3 *db)
         }
         sqlite3_finalize(stmt_retrieve);
 
-        char continue_choice[10];
-        do
-        {
-            printf("\nDo you want to perform another update operation? (y/n): ");
-            if (fgets(continue_choice, sizeof(continue_choice), stdin) == NULL)
-            {
-                printf("Error reading input.\n");
-                continue;
-            }
-            continue_choice[strcspn(continue_choice, "\n")] = 0; // Remove newline
-
-            if (strcmp(continue_choice, "y") != 0 && strcmp(continue_choice, "n") != 0)
-            {
-                printf("Please enter a valid option ('y' or 'n')!\n");
-            }
-        } while (strcmp(continue_choice, "y") != 0 && strcmp(continue_choice, "n") != 0);
-
-        if (strcmp(continue_choice, "n") == 0)
+        if (!getYesNoChoice(&u, db, "Do you want to perform another update operation?"))
         {
             printf("\nReturning to main menu...\n");
             mainMenu(&u, db);
+            return;
         }
     }
 }
@@ -704,19 +807,12 @@ void transferAcc(struct User u, sqlite3 *db)
     int accID;
     char newName[100];
     char choice[10];
-
+    clearInputBuffer();
+    system("clear");
     do
     {
-        system("clear");
         printf("\nEnter the account number you want to transfer: ");
-        if (scanf("%d", &accID) != 1)
-        {
-            printf("Invalid input. Please enter a valid account number.\n");
-            clearInputBuffer();
-            continue;
-        }
-        clearInputBuffer(); // Clear buffer after successful scanf
-
+        accID = getValidAccountNumber();
         // Begin transaction
         if (sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK)
         {
@@ -737,7 +833,7 @@ void transferAcc(struct User u, sqlite3 *db)
         {
             printf("No account found with ID %d for this user\n", accID);
             sqlite3_finalize(stmt_select_account);
-            
+
             do
             {
                 printf("\nDo you want to try another transfer? (y/n): ");
@@ -756,7 +852,7 @@ void transferAcc(struct User u, sqlite3 *db)
 
             if (choice[0] == 'n')
             {
-                success(u, db);
+                mainMenu(&u,db);
                 return;
             }
             continue;
@@ -818,22 +914,25 @@ void transferAcc(struct User u, sqlite3 *db)
 
         if (choice[0] == 'n')
         {
-            success(u, db);
+            mainMenu(&u, db);
             return;
         }
 
     } while (choice[0] == 'y');
-
-    success(u, db);
+    mainMenu(&u, db);
 
 rollback:
     sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
     printf("Transfer operation failed.\n");
 }
+
 void checkAccountsDetails(struct User *u, sqlite3 *db)
 {
     int accId;
     char choice[10];
+    char buffer[100];
+    clearInputBuffer();
+    system("clear");
     do
     {
         const char *sql_select = "SELECT account_number, deposit_date, country, phone_number, balance, account_type FROM accounts WHERE account_number = ? AND user_id = ?;";
@@ -846,15 +945,8 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
         double amount;
         double interest;
         int interestDay;
-
         printf("\nEnter the account number you want to check: ");
-        if (scanf("%d", &accId) != 1)
-        {
-            printf("Invalid input. Please enter a number.\n");
-            while (getchar() != '\n')
-                ; // Clear input buffer
-            continue;
-        }
+        accId = getValidAccountNumber();
 
         // Prepare the SQL statement
         if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK)
@@ -928,33 +1020,31 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
             sqlite3_finalize(stmt_select);
         }
 
-        printf("\nDo you want to check another account? (y/n): ");
-        if (fgets(choice, sizeof(choice), stdin) == NULL)
+        if (getYesNoChoice(u, db, "Do you want to check another account?"))
         {
-            printf("Error reading input.\n");
-            continue;
+            continue; // Continue with outer loop
         }
-        choice[strcspn(choice, "\n")] = 0; // Remove newline
-
-        if (strcmp(choice, "y") != 0 && strcmp(choice, "n") != 0)
+        else
         {
-            printf("Please enter a valid option ('y' or 'n')!\n");
+            mainMenu(u, db); // Go to main menu
+            return;
         }
-    } while (strcmp(choice, "y") != 0 && strcmp(choice, "n") != 0);
+    } while (1);
 
-    success(*u, db);
+    // success(*u, db);
 }
 
 void deleteAccount(struct User *u, sqlite3 *db)
 {
     int accId;
     char choice;
-
+    clearInputBuffer();
+    system("clear");
     do
     {
+
         printf("Enter the account ID you want to delete: ");
-        scanf("%d", &accId);
-        clearInputBuffer();
+        accId = getValidAccountNumber();
 
         const char *sql_check = "SELECT COUNT(*) FROM accounts WHERE account_number = ? AND user_id = ?;";
         const char *sql_delete = "DELETE FROM accounts WHERE account_number = ? AND user_id = ?;";
@@ -1007,14 +1097,8 @@ void deleteAccount(struct User *u, sqlite3 *db)
             sqlite3_finalize(stmt_delete);
         }
 
-        printf("\nDo you want to delete another account? (y/n): ");
-        scanf(" %c", &choice);
-        while (getchar() != '\n')
-            ; // Clear input buffer
-
-    } while (choice == 'y' || choice == 'Y');
-
-    success(*u, db);
+    } while (getYesNoChoice(u, db, "Do you want to delete another account?"));
+    mainMenu(u, db);
 }
 
 void makeTransaction(struct User u, sqlite3 *db)
@@ -1029,19 +1113,14 @@ void makeTransaction(struct User u, sqlite3 *db)
     const char *sql_update = "UPDATE accounts SET balance = ? WHERE account_number = ? AND user_id = ?;";
     sqlite3_stmt *stmt_select;
     sqlite3_stmt *stmt_update;
-    char retry;
-
+    int transaction_completed = 0; // Flag to track if a transaction was completed
+    clearInputBuffer();
+    system("clear");
     do
     {
-        // Step 1: Prompt for Account ID
+        transaction_completed = 0;
         printf("Enter the account ID you want to make a transaction on: ");
-        if (scanf("%d", &accID) != 1)
-        {
-            printf("Invalid input. Please enter a valid account number.\n");
-            while (getchar() != '\n')
-                ; // Clear input buffer
-            continue;
-        }
+        accID = getValidAccountNumber();
 
         // Prepare the select statement
         if (sqlite3_prepare_v2(db, sql_select, -1, &stmt_select, 0) != SQLITE_OK)
@@ -1057,10 +1136,11 @@ void makeTransaction(struct User u, sqlite3 *db)
         {
             printf("No account found with ID %d for this user\n", accID);
             sqlite3_finalize(stmt_select);
-            printf("Do you want to try again? (y/n): ");
-            scanf(" %c", &retry);
-            while (getchar() != '\n')
-                ; // Clear input buffer
+            if (!getYesNoChoice(&u, db, "Do you want to try again?"))
+            {
+                mainMenu(&u, db);
+                return;
+            }
             continue;
         }
 
@@ -1073,10 +1153,11 @@ void makeTransaction(struct User u, sqlite3 *db)
         {
             printf("Error: Transactions are not allowed for %s accounts.\n", accountType);
             sqlite3_finalize(stmt_select);
-            printf("Do you want to try another account? (y/n): ");
-            scanf(" %c", &retry);
-            while (getchar() != '\n')
-                ; // Clear input buffer
+            if (!getYesNoChoice(&u, db, "Do you want to try another account?"))
+            {
+                mainMenu(&u, db);
+                return;
+            }
             continue;
         }
 
@@ -1093,20 +1174,17 @@ void makeTransaction(struct User u, sqlite3 *db)
             if (scanf("%d", &choice) != 1)
             {
                 printf("Invalid input. Please enter a valid choice.\n");
-                while (getchar() != '\n')
-                    ;       // Clear input buffer
-                choice = 0; // Set to invalid choice to repeat the loop
+                clearInputBuffer();
+                choice = 0;
             }
             else if (choice < 1 || choice > 3)
             {
                 printf("Invalid choice. Please enter 1, 2, or 3.\n");
-                choice = 0; // Set to invalid choice to repeat the loop
+                choice = 0;
             }
             else
             {
-                // Clear the input buffer after a valid choice
-                while (getchar() != '\n')
-                    ;
+                clearInputBuffer();
             }
         } while (choice == 0);
 
@@ -1136,12 +1214,8 @@ void makeTransaction(struct User u, sqlite3 *db)
             }
             else if (len == sizeof(amountStr) - 1)
             {
-                // Input was too long
                 printf("Input too long. Please enter a smaller amount.\n");
-                // Clear the input buffer
-                int c;
-                while ((c = getchar()) != '\n' && c != EOF)
-                    ;
+                clearInputBuffer();
                 continue;
             }
 
@@ -1192,10 +1266,11 @@ void makeTransaction(struct User u, sqlite3 *db)
             {
                 printf("\nInsufficient balance\n");
                 sqlite3_finalize(stmt_select);
-                printf("Do you want to try another transaction? (y/n): ");
-                scanf(" %c", &retry);
-                while (getchar() != '\n')
-                    ; // Clear input buffer
+                if (!getYesNoChoice(&u, db, "Do you want to try another transaction?"))
+                {
+                    mainMenu(&u, db);
+                    return;
+                }
                 continue;
             }
             balance -= amount;
@@ -1222,18 +1297,22 @@ void makeTransaction(struct User u, sqlite3 *db)
         else
         {
             printf("\nTransaction successful. New balance: $%.2f\n", balance);
+            transaction_completed = 1;
         }
 
         // Finalize the statements
         sqlite3_finalize(stmt_select);
         sqlite3_finalize(stmt_update);
 
-        printf("Do you want to make another transaction? (y/n): ");
-        scanf(" %c", &retry);
-        while (getchar() != '\n')
-            ; // Clear input buffer
+        if (transaction_completed)
+        {
+            if (!getYesNoChoice(&u, db, "Do you want to make another transaction?"))
+            {
+                break;
+            }
+        }
 
-    } while (retry == 'y' || retry == 'Y');
+    } while (1);
 
-    success(u, db);
+    mainMenu(&u, db);
 }
