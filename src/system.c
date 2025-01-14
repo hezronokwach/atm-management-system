@@ -9,45 +9,6 @@
 #include "database.h"
 #include <stdbool.h>
 
-void stayOrReturn(int notGood, void f(struct User u), struct User u, sqlite3 *db)
-{
-    int option;
-    if (notGood == 0)
-    {
-        system("clear");
-        printf("\n✖ Record not found!!\n");
-    invalid:
-        printf("\nEnter 0 to try again, 1 to return to main menu and 2 to exit:");
-        scanf("%d", &option);
-        if (option == 0)
-            f(u);
-        else if (option == 1)
-            mainMenu(&u, db);
-        else if (option == 2)
-            exit(0);
-        else
-        {
-            printf("Insert a valid operation!\n");
-            goto invalid;
-        }
-    }
-    else
-    {
-        printf("\nEnter 1 to go to the main menu and 0 to exit:");
-        scanf("%d", &option);
-    }
-    if (option == 1)
-    {
-        system("clear");
-        mainMenu(&u, db);
-    }
-    else
-    {
-        system("clear");
-        exit(1);
-    }
-}
-
 void success(struct User u, sqlite3 *db)
 {
     char buffer[100];
@@ -264,6 +225,17 @@ int validateDate(const char *date)
     return 1;
 }
 
+int isEmptyInput(const char *str) {
+    // Return 1 if string is empty or only whitespace
+    while (*str) {
+        if (!isspace(*str)) {
+            return 0;  // Found a non-space character
+        }
+        str++;
+    }
+    return 1;  // Only found spaces or empty string
+}
+
 void createNewAcc(struct User u, sqlite3 *db)
 {
     struct Record r;
@@ -272,7 +244,7 @@ void createNewAcc(struct User u, sqlite3 *db)
     const char *sql_insert = "INSERT INTO accounts (user_id, account_number, balance, account_type, phone_number, deposit_date, country) VALUES (?,?,?,?,?,?,?);";
     sqlite3_stmt *stmt_check;
     sqlite3_stmt *stmt_insert;
-
+    clearInputBuffer();
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
@@ -286,6 +258,11 @@ void createNewAcc(struct User u, sqlite3 *db)
             continue;
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+        if (isEmptyInput(buffer)) {
+        printf("Date cannot be empty. Please enter a valid date.\n");
+        continue;
+    }
 
         if (strlen(buffer) != 10 || !validateDate(buffer))
         {
@@ -311,6 +288,11 @@ void createNewAcc(struct User u, sqlite3 *db)
             continue;
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+         if (isEmptyInput(buffer)) {
+        printf("Account number cannot be empty. Please enter a valid number.\n");
+        continue;
+    }
 
         if (strlen(buffer) > 12)
         {
@@ -371,6 +353,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
+        if (isEmptyInput(buffer)) {
+        printf("Country name cannot be empty. Please enter a valid country name.\n");
+        continue;
+    }
+
         if (strlen(buffer) > 20)
         {
             printf("Country name too long. Maximum length is 20 characters.\n");
@@ -411,6 +398,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         phone_str[strcspn(phone_str, "\n")] = 0; // Remove newline
 
+        if (isEmptyInput(phone_str)) {
+        printf("Phone number cannot be empty. Please enter a valid number.\n");
+        continue;
+    }
+
         if (strlen(phone_str) > 12)
         {
             printf("Phone number too long. Maximum length is 12 digits.\n");
@@ -450,6 +442,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         amount_str[strcspn(amount_str, "\n")] = 0; // Remove newline
 
+        if (isEmptyInput(amount_str)) {
+        printf("Amount cannot be empty. Please enter a valid amount.\n");
+        continue;
+    }
+
         if (strlen(amount_str) > 10)
         {
             printf("Amount too long. Maximum length is 10 digits.\n");
@@ -478,6 +475,10 @@ void createNewAcc(struct User u, sqlite3 *db)
             continue;
         }
         accountType_str[strcspn(accountType_str, "\n")] = 0; // Remove newline
+         if (isEmptyInput(accountType_str)) {
+        printf("Account type cannot be empty. Please choose from the options provided.\n");
+        continue;
+    }
 
         if (strlen(accountType_str) > 9)
         {
@@ -570,10 +571,12 @@ void checkAllAccounts(struct User u, sqlite3 *db)
 
     // Bind the user ID to the query
     sqlite3_bind_int(stmt_retrieve, 1, u.id);
+    
 
     // Execute the query
     if (sqlite3_step(stmt_retrieve) == SQLITE_ROW)
     {
+        clearInputBuffer();
         system("clear");
         printf("\t\t====== All accounts for user, %s =====\n\n", u.name);
 
@@ -611,6 +614,7 @@ void checkAllAccounts(struct User u, sqlite3 *db)
 
     // Finalize the statement
     sqlite3_finalize(stmt_retrieve);
+   
     success(u, db);
 }
 
@@ -1031,7 +1035,7 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
         }
     } while (1);
 
-    // success(*u, db);
+     mainMenu(u,db);
 }
 
 void deleteAccount(struct User *u, sqlite3 *db)

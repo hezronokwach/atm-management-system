@@ -6,7 +6,7 @@ void mainMenu(struct User *u, sqlite3 *db)
 {
     int option;
     system("clear");
-    printf("\n\n\t\t======= ATM =======\n\n");
+    printf("\n\n\t\t\t\t======= ATM =======\n\n");
     printf("\n\t\t-->> Feel free to choose one of the options below <<--\n");
     printf("\n\t\t[1]- Create a new account\n");
     printf("\n\t\t[2]- Update account information\n");
@@ -16,12 +16,20 @@ void mainMenu(struct User *u, sqlite3 *db)
     printf("\n\t\t[6]- Remove existing account\n");
     printf("\n\t\t[7]- Transfer ownership\n");
     printf("\n\t\t[8]- Exit\n");
-    scanf("%d", &option);
+     if (scanf("%d", &option) != 1) {
+        printf("\n\t\tInvalid input! Please enter a number between 1 and 8.\n");
+        exit(1);
+    }
+
+    if (option < 1 || option > 8) {
+        printf("\n\t\tInvalid choice! Please enter a number between 1 and 8.\n");
+        exit(1);
+    }
 
     switch (option)
     {
     case 1:
-        clearInputBuffer();
+        //clearInputBuffer();
         createNewAcc(*u, db);
         break;
     case 2:
@@ -46,62 +54,64 @@ void mainMenu(struct User *u, sqlite3 *db)
         exit(1);
         break;
     default:
-        printf("Invalid operation!\n");
+        //printf("Invalid operation!\n");
+        exit(1);
+        break;
     }
 }
 
-void initMenu(struct User *u, sqlite3 *db)
-{
-    bool validInput = false;
-    int option;
-    while (!validInput)
+    void initMenu(struct User * u, sqlite3 * db)
     {
-        system("clear");
-        printf("\n\n\t\t======= ATM =======\n");
-        printf("\n\t\t-->> Feel free to login / register :\n");
-        printf("\n\t\t[1]- login\n");
-        printf("\n\t\t[2]- register\n");
-        printf("\n\t\t[3]- exit\n");
-
-        scanf("%d", &option);
-        switch (option)
+        bool validInput = false;
+        int option;
+        while (!validInput)
         {
-        case 1:
-            loginMenu(db);
-            validInput = true;
-            break;
-        case 2:
+            system("clear");
+             printf("\n\n\t\t\t======= ATM =======\n\n");
+            printf("\n\t\t-->> Feel free to login / register :\n");
+            printf("\n\t\t[1]- login\n");
+            printf("\n\t\t[2]- register\n");
+            printf("\n\t\t[3]- exit\n");
 
-            registerAcc(db);
-            validInput = true;
-            break;
-        case 3:
-            exit(1);
-            break;
-        default:
-            printf("Insert a valid operation!\n");
-            validInput = true;
-            break;
+            scanf("%d", &option);
+            switch (option)
+            {
+            case 1:
+                loginMenu(db);
+                validInput = true;
+                break;
+            case 2:
+
+                registerAcc(db);
+                validInput = true;
+                break;
+            case 3:
+                exit(1);
+                break;
+            default:
+                printf("Insert a valid operation!\n");
+                validInput = true;
+                break;
+            }
         }
     }
-}
-int main()
-{
-    struct User u;
-    sqlite3 *db; // Declare the database pointer
-    int rc;
-
-    // Initialize the database and create tables
-    rc = initializeDatabase(&db);
-    if (rc != SQLITE_OK)
+    int main()
     {
-        fprintf(stderr, "Failed to initialize database. Error: %s\n", sqlite3_errmsg(db));
-        return 1;
-    }
-    initMenu(&u, db);
+        struct User u;
+        sqlite3 *db; // Declare the database pointer
+        int rc;
 
-    // Close the database connection
-    sqlite3_close(db);
-    printf("Thank you for using our ATM system. Goodbye!\n");
-    return 0;
-}
+        // Initialize the database and create tables
+        rc = initializeDatabase(&db);
+        if (rc != SQLITE_OK)
+        {
+            fprintf(stderr, "Failed to initialize database. Error: %s\n", sqlite3_errmsg(db));
+            return 1;
+        }
+        initMenu(&u, db);
+
+        // Close the database connection
+        sqlite3_close(db);
+        printf("Thank you for using our ATM system. Goodbye!\n");
+        return 0;
+    }

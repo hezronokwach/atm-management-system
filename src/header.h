@@ -35,7 +35,6 @@ int getUserId(const char *username, sqlite3 *db);
 
 // system function
 int getYesNoChoice(struct User *u, sqlite3 *db, const char *prompt);
-
 void createNewAcc(struct User u, sqlite3 *db);
 void mainMenu(struct User *u, sqlite3 *db);
 void checkAllAccounts(struct User u,sqlite3 *db);
@@ -43,7 +42,7 @@ void update(struct User u, sqlite3 *db);
 void checkAccountsDetails(struct User *u, sqlite3 *db);
 void deleteAccount(struct User *u, sqlite3 *db);
 void transferAcc(struct User u, sqlite3 *db);
-//void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db);
+void completeTransfer(int accID, char *receiverName, struct User u, sqlite3 *db);
 void makeTransaction(struct User u, sqlite3 *db);
 void clearInputBuffer();
 void success(struct User u, sqlite3 *db);
