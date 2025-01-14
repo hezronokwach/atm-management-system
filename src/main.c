@@ -4,7 +4,10 @@
 
 void mainMenu(struct User *u, sqlite3 *db)
 {
+    char buffer[100];
+    char extra;
     int option;
+    
     system("clear");
     printf("\n\n\t\t\t\t======= ATM =======\n\n");
     printf("\n\t\t-->> Feel free to choose one of the options below <<--\n");
@@ -16,8 +19,10 @@ void mainMenu(struct User *u, sqlite3 *db)
     printf("\n\t\t[6]- Remove existing account\n");
     printf("\n\t\t[7]- Transfer ownership\n");
     printf("\n\t\t[8]- Exit\n");
-     if (scanf("%d", &option) != 1) {
-        printf("\n\t\tInvalid input! Please enter a number between 1 and 8.\n");
+
+    // Read input and check for extra characters
+    if (scanf("%d%c", &option, &extra) != 2 || extra != '\n') {
+        printf("\n\t\tInvalid input! Please enter a single digit (1-8).\n");
         exit(1);
     }
 
@@ -28,35 +33,33 @@ void mainMenu(struct User *u, sqlite3 *db)
 
     switch (option)
     {
-    case 1:
-        //clearInputBuffer();
-        createNewAcc(*u, db);
-        break;
-    case 2:
-        update(*u, db);
-        break;
-    case 3:
-        checkAccountsDetails(u, db);
-        break;
-    case 4:
-        checkAllAccounts(*u, db);
-        break;
-    case 5:
-        makeTransaction(*u, db);
-        break;
-    case 6:
-        deleteAccount(u, db);
-        break;
-    case 7:
-        transferAcc(*u, db);
-        break;
-    case 8:
-        exit(1);
-        break;
-    default:
-        //printf("Invalid operation!\n");
-        exit(1);
-        break;
+        case 1:
+            createNewAcc(*u, db);
+            break;
+        case 2:
+            update(*u, db);
+            break;
+        case 3:
+            checkAccountsDetails(u, db);
+            break;
+        case 4:
+            checkAllAccounts(*u, db);
+            break;
+        case 5:
+            makeTransaction(*u, db);
+            break;
+        case 6:
+            deleteAccount(u, db);
+            break;
+        case 7:
+            transferAcc(*u, db);
+            break;
+        case 8:
+            exit(1);
+            break;
+        default:
+            exit(1);
+            break;
     }
 }
 

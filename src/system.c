@@ -244,7 +244,7 @@ void createNewAcc(struct User u, sqlite3 *db)
     const char *sql_insert = "INSERT INTO accounts (user_id, account_number, balance, account_type, phone_number, deposit_date, country) VALUES (?,?,?,?,?,?,?);";
     sqlite3_stmt *stmt_check;
     sqlite3_stmt *stmt_insert;
-    clearInputBuffer();
+    //clearInputBuffer();
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
@@ -576,7 +576,7 @@ void checkAllAccounts(struct User u, sqlite3 *db)
     // Execute the query
     if (sqlite3_step(stmt_retrieve) == SQLITE_ROW)
     {
-        clearInputBuffer();
+        //clearInputBuffer();
         system("clear");
         printf("\t\t====== All accounts for user, %s =====\n\n", u.name);
 
@@ -631,7 +631,7 @@ void update(struct User u, sqlite3 *db)
     sqlite3_stmt *stmt_retrieve;
     sqlite3_stmt *stmt_update_phone;
     sqlite3_stmt *stmt_update_country;
-    clearInputBuffer();
+    //clearInputBuffer();
     system("clear");
     while (1)
     {
@@ -811,7 +811,7 @@ void transferAcc(struct User u, sqlite3 *db)
     int accID;
     char newName[100];
     char choice[10];
-    clearInputBuffer();
+    //clearInputBuffer();
     system("clear");
     do
     {
@@ -935,7 +935,7 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
     int accId;
     char choice[10];
     char buffer[100];
-    clearInputBuffer();
+   // clearInputBuffer();
     system("clear");
     do
     {
@@ -1042,7 +1042,7 @@ void deleteAccount(struct User *u, sqlite3 *db)
 {
     int accId;
     char choice;
-    clearInputBuffer();
+    //clearInputBuffer();
     system("clear");
     do
     {
@@ -1118,7 +1118,7 @@ void makeTransaction(struct User u, sqlite3 *db)
     sqlite3_stmt *stmt_select;
     sqlite3_stmt *stmt_update;
     int transaction_completed = 0; // Flag to track if a transaction was completed
-    clearInputBuffer();
+   // clearInputBuffer();
     system("clear");
     do
     {
