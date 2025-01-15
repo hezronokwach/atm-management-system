@@ -66,26 +66,24 @@ CREATE TABLE accounts (
 
 ### Setup and Installation:
 
-Clone the repository:
+1.  Clone the repository:
+```bash 
+git clone https://learn.zone01kisumu.ke/git/hokwach/atm-management-system.git`
+```
+2.  Ensure SQLite3 is installed on your system:
 
-`git clone https://learn.zone01kisumu.ke/git/hokwach/atm-management-system.git`
-
-
-Ensure SQLite3 is installed on your system:
-
-Navigate to the project directory:
-
-`cd atm-management-system`
-
-Compile the project using make:
-
-`make`
-
-
-Run the application:
-
-`./atm`
-
+3.  Navigate to the project directory:
+```
+cd atm-management-system
+```
+4.  Compile the project using make:
+```
+make
+```
+5.  Run the application:
+```
+./atm
+```
 
 ### Usage
 * Start the Application
