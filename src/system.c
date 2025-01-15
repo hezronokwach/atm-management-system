@@ -163,7 +163,7 @@ int validateDate(const char *date)
     struct tm tm;
     time_t now = time(NULL);
     struct tm *current_time = localtime(&now);
-    
+
     if (strptime(date, "%Y-%m-%d", &tm) == NULL)
     {
         printf("Invalid date format. Please use YYYY-MM-DD.\n");
@@ -179,11 +179,11 @@ int validateDate(const char *date)
     int current_day = current_time->tm_mday;
 
     // Check if date is in the future
-    if (year > current_year || 
+    if (year > current_year ||
         (year == current_year && month > current_month) ||
         (year == current_year && month == current_month && day > current_day))
     {
-        printf("Error: Date cannot be in the future. Today is %d-%02d-%02d.\n", 
+        printf("Error: Date cannot be in the future. Today is %d-%02d-%02d.\n",
                current_year, current_month, current_day);
         return 0;
     }
@@ -206,14 +206,17 @@ int validateDate(const char *date)
     int maxDay;
     switch (month)
     {
-        case 4: case 6: case 9: case 11:
-            maxDay = 30;
-            break;
-        case 2:
-            maxDay = isLeapYear(year) ? 29 : 28;
-            break;
-        default:
-            maxDay = 31;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        maxDay = 30;
+        break;
+    case 2:
+        maxDay = isLeapYear(year) ? 29 : 28;
+        break;
+    default:
+        maxDay = 31;
     }
 
     if (day < 1 || day > maxDay)
@@ -225,15 +228,18 @@ int validateDate(const char *date)
     return 1;
 }
 
-int isEmptyInput(const char *str) {
+int isEmptyInput(const char *str)
+{
     // Return 1 if string is empty or only whitespace
-    while (*str) {
-        if (!isspace(*str)) {
-            return 0;  // Found a non-space character
+    while (*str)
+    {
+        if (!isspace(*str))
+        {
+            return 0; // Found a non-space character
         }
         str++;
     }
-    return 1;  // Only found spaces or empty string
+    return 1; // Only found spaces or empty string
 }
 
 void createNewAcc(struct User u, sqlite3 *db)
@@ -244,7 +250,7 @@ void createNewAcc(struct User u, sqlite3 *db)
     const char *sql_insert = "INSERT INTO accounts (user_id, account_number, balance, account_type, phone_number, deposit_date, country) VALUES (?,?,?,?,?,?,?);";
     sqlite3_stmt *stmt_check;
     sqlite3_stmt *stmt_insert;
-    //clearInputBuffer();
+    // clearInputBuffer();
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
@@ -259,10 +265,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
-        if (isEmptyInput(buffer)) {
-        printf("Date cannot be empty. Please enter a valid date.\n");
-        continue;
-    }
+        if (isEmptyInput(buffer))
+        {
+            printf("Date cannot be empty. Please enter a valid date.\n");
+            continue;
+        }
 
         if (strlen(buffer) != 10 || !validateDate(buffer))
         {
@@ -289,10 +296,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
-         if (isEmptyInput(buffer)) {
-        printf("Account number cannot be empty. Please enter a valid number.\n");
-        continue;
-    }
+        if (isEmptyInput(buffer))
+        {
+            printf("Account number cannot be empty. Please enter a valid number.\n");
+            continue;
+        }
 
         if (strlen(buffer) > 12)
         {
@@ -353,10 +361,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
-        if (isEmptyInput(buffer)) {
-        printf("Country name cannot be empty. Please enter a valid country name.\n");
-        continue;
-    }
+        if (isEmptyInput(buffer))
+        {
+            printf("Country name cannot be empty. Please enter a valid country name.\n");
+            continue;
+        }
 
         if (strlen(buffer) > 20)
         {
@@ -398,10 +407,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         phone_str[strcspn(phone_str, "\n")] = 0; // Remove newline
 
-        if (isEmptyInput(phone_str)) {
-        printf("Phone number cannot be empty. Please enter a valid number.\n");
-        continue;
-    }
+        if (isEmptyInput(phone_str))
+        {
+            printf("Phone number cannot be empty. Please enter a valid number.\n");
+            continue;
+        }
 
         if (strlen(phone_str) > 12)
         {
@@ -442,10 +452,11 @@ void createNewAcc(struct User u, sqlite3 *db)
         }
         amount_str[strcspn(amount_str, "\n")] = 0; // Remove newline
 
-        if (isEmptyInput(amount_str)) {
-        printf("Amount cannot be empty. Please enter a valid amount.\n");
-        continue;
-    }
+        if (isEmptyInput(amount_str))
+        {
+            printf("Amount cannot be empty. Please enter a valid amount.\n");
+            continue;
+        }
 
         if (strlen(amount_str) > 10)
         {
@@ -475,10 +486,11 @@ void createNewAcc(struct User u, sqlite3 *db)
             continue;
         }
         accountType_str[strcspn(accountType_str, "\n")] = 0; // Remove newline
-         if (isEmptyInput(accountType_str)) {
-        printf("Account type cannot be empty. Please choose from the options provided.\n");
-        continue;
-    }
+        if (isEmptyInput(accountType_str))
+        {
+            printf("Account type cannot be empty. Please choose from the options provided.\n");
+            continue;
+        }
 
         if (strlen(accountType_str) > 9)
         {
@@ -571,12 +583,11 @@ void checkAllAccounts(struct User u, sqlite3 *db)
 
     // Bind the user ID to the query
     sqlite3_bind_int(stmt_retrieve, 1, u.id);
-    
 
     // Execute the query
     if (sqlite3_step(stmt_retrieve) == SQLITE_ROW)
     {
-        //clearInputBuffer();
+        // clearInputBuffer();
         system("clear");
         printf("\t\t====== All accounts for user, %s =====\n\n", u.name);
 
@@ -614,7 +625,7 @@ void checkAllAccounts(struct User u, sqlite3 *db)
 
     // Finalize the statement
     sqlite3_finalize(stmt_retrieve);
-   
+
     success(u, db);
 }
 
@@ -631,7 +642,7 @@ void update(struct User u, sqlite3 *db)
     sqlite3_stmt *stmt_retrieve;
     sqlite3_stmt *stmt_update_phone;
     sqlite3_stmt *stmt_update_country;
-    //clearInputBuffer();
+    // clearInputBuffer();
     system("clear");
     while (1)
     {
@@ -811,7 +822,7 @@ void transferAcc(struct User u, sqlite3 *db)
     int accID;
     char newName[100];
     char choice[10];
-    //clearInputBuffer();
+    // clearInputBuffer();
     system("clear");
     do
     {
@@ -856,7 +867,7 @@ void transferAcc(struct User u, sqlite3 *db)
 
             if (choice[0] == 'n')
             {
-                mainMenu(&u,db);
+                mainMenu(&u, db);
                 return;
             }
             continue;
@@ -935,7 +946,7 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
     int accId;
     char choice[10];
     char buffer[100];
-   // clearInputBuffer();
+    // clearInputBuffer();
     system("clear");
     do
     {
@@ -949,6 +960,9 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
         double amount;
         double interest;
         int interestDay;
+        time_t now;
+        time(&now);
+        struct tm *maturity_date = localtime(&now);
         printf("\nEnter the account number you want to check: ");
         accId = getValidAccountNumber();
 
@@ -1004,17 +1018,63 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
             else if (strcmp(accountType, "fixed01") == 0)
             {
                 interest = (0.04 * amount); // Total interest for 1 year
-                printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+                // Assuming deposit_date is in format YYYY-MM-DD from database
+                struct tm deposit_tm = {0};
+                sscanf(depositDate, "%d-%d-%d",
+                       &deposit_tm.tm_year,
+                       &deposit_tm.tm_mon,
+                       &deposit_tm.tm_mday);
+                deposit_tm.tm_year -= 1900; // Adjust year
+                deposit_tm.tm_mon -= 1;     // Adjust month (0-11)
+
+                // Add 1 year to deposit date
+                deposit_tm.tm_year += 1;
+
+                printf("\nYou will get $%.2f interest on %02d/%02d/%d\n",
+                       interest,
+                       deposit_tm.tm_mday,
+                       deposit_tm.tm_mon + 1,
+                       deposit_tm.tm_year + 1900);
             }
             else if (strcmp(accountType, "fixed02") == 0)
             {
                 interest = (0.05 * amount) * 2; // Total interest for 2 years
-                printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+                struct tm deposit_tm = {0};
+                sscanf(depositDate, "%d-%d-%d",
+                       &deposit_tm.tm_year,
+                       &deposit_tm.tm_mon,
+                       &deposit_tm.tm_mday);
+                deposit_tm.tm_year -= 1900;
+                deposit_tm.tm_mon -= 1;
+
+                // Add 2 years to deposit date
+                deposit_tm.tm_year += 2;
+
+                printf("\nYou will get $%.2f interest on %02d/%02d/%d\n",
+                       interest,
+                       deposit_tm.tm_mday,
+                       deposit_tm.tm_mon + 1,
+                       deposit_tm.tm_year + 1900);
             }
             else if (strcmp(accountType, "fixed03") == 0)
             {
                 interest = (0.08 * amount) * 3; // Total interest for 3 years
-                printf("\nYou will get $%.2f interest on day %d of every month\n", interest, interestDay);
+                struct tm deposit_tm = {0};
+                sscanf(depositDate, "%d-%d-%d",
+                       &deposit_tm.tm_year,
+                       &deposit_tm.tm_mon,
+                       &deposit_tm.tm_mday);
+                deposit_tm.tm_year -= 1900;
+                deposit_tm.tm_mon -= 1;
+
+                // Add 3 years to deposit date
+                deposit_tm.tm_year += 3;
+
+                printf("\nYou will get $%.2f interest on %02d/%02d/%d\n",
+                       interest,
+                       deposit_tm.tm_mday,
+                       deposit_tm.tm_mon + 1,
+                       deposit_tm.tm_year + 1900);
             }
             else if (strcmp(accountType, "current") == 0)
             {
@@ -1035,14 +1095,14 @@ void checkAccountsDetails(struct User *u, sqlite3 *db)
         }
     } while (1);
 
-     mainMenu(u,db);
+    mainMenu(u, db);
 }
 
 void deleteAccount(struct User *u, sqlite3 *db)
 {
     int accId;
     char choice;
-    //clearInputBuffer();
+    // clearInputBuffer();
     system("clear");
     do
     {
@@ -1118,7 +1178,7 @@ void makeTransaction(struct User u, sqlite3 *db)
     sqlite3_stmt *stmt_select;
     sqlite3_stmt *stmt_update;
     int transaction_completed = 0; // Flag to track if a transaction was completed
-   // clearInputBuffer();
+                                   // clearInputBuffer();
     system("clear");
     do
     {
