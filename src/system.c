@@ -68,7 +68,16 @@ int getValidAccountNumber()
                 ;
             printf("Input too long. Please enter a number with maximum 12 digits.\n");
             printf("\nEnter the account number: ");
+            continue;if (strchr(buffer, '\n') == NULL)
+        {
+            // Clear the remaining input
+            while (getchar() != '\n')
+                ;
+            printf("Input too long. Please enter a number with maximum 12 digits.\n");
+            printf("\nEnter the account number: ");
             continue;
+        }
+
         }
 
         // Remove newline
@@ -151,6 +160,13 @@ int getYesNoChoice(struct User *u, sqlite3 *db, const char *prompt)
         return (strcmp(continue_choice, "y") == 0) ? 1 : 0;
 
     } while (1);
+}
+void clearInputBuffer()
+{
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+    {
+    }
 }
 // Helper function to validate date format
 int isLeapYear(int year)
@@ -558,13 +574,7 @@ void createNewAcc(struct User u, sqlite3 *db)
     sqlite3_finalize(stmt_insert);
     mainMenu(&u, db);
 }
-void clearInputBuffer()
-{
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF)
-    {
-    }
-}
+
 void checkAllAccounts(struct User u, sqlite3 *db)
 {
     const char *sql_retrieve =

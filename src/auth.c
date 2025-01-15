@@ -60,12 +60,12 @@ void loginMenu(sqlite3 *db) {
     const char *stored_password;
     char buffer[BUFFER_SIZE];
     int valid_input = 0;
-
+ //clearInputBuffer();
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
 
     // Clear any leftover input
-    clearInputBuffer();
+   
 
     // Username validation
     while (!valid_input) {
@@ -174,7 +174,7 @@ void registerAcc(sqlite3 *db) {
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Name:");
 
-    clearInputBuffer();
+   // clearInputBuffer();
 
     // Get username
     int valid_username = 0;

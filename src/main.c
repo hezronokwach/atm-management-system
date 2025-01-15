@@ -7,7 +7,7 @@ void mainMenu(struct User *u, sqlite3 *db)
     char buffer[100];
     char extra;
     int option;
-    
+
     system("clear");
     printf("\n\n\t\t\t\t======= ATM =======\n\n");
     printf("\n\t\t-->> Feel free to choose one of the options below <<--\n");
@@ -21,100 +21,114 @@ void mainMenu(struct User *u, sqlite3 *db)
     printf("\n\t\t[8]- Exit\n");
 
     // Read input and check for extra characters
-    if (scanf("%d%c", &option, &extra) != 2 || extra != '\n') {
+    if (scanf("%d%c", &option, &extra) != 2 || extra != '\n')
+    {
         printf("\n\t\tInvalid input! Please enter a single digit (1-8).\n");
         exit(1);
     }
 
-    if (option < 1 || option > 8) {
+    if (option < 1 || option > 8)
+    {
         printf("\n\t\tInvalid choice! Please enter a number between 1 and 8.\n");
         exit(1);
     }
 
     switch (option)
     {
-        case 1:
-            createNewAcc(*u, db);
-            break;
-        case 2:
-            update(*u, db);
-            break;
-        case 3:
-            checkAccountsDetails(u, db);
-            break;
-        case 4:
-            checkAllAccounts(*u, db);
-            break;
-        case 5:
-            makeTransaction(*u, db);
-            break;
-        case 6:
-            deleteAccount(u, db);
-            break;
-        case 7:
-            transferAcc(*u, db);
-            break;
-        case 8:
-            exit(1);
-            break;
-        default:
-            exit(1);
-            break;
+    case 1:
+        createNewAcc(*u, db);
+        break;
+    case 2:
+        update(*u, db);
+        break;
+    case 3:
+        checkAccountsDetails(u, db);
+        break;
+    case 4:
+        checkAllAccounts(*u, db);
+        break;
+    case 5:
+        makeTransaction(*u, db);
+        break;
+    case 6:
+        deleteAccount(u, db);
+        break;
+    case 7:
+        transferAcc(*u, db);
+        break;
+    case 8:
+        exit(1);
+        break;
+    default:
+        exit(1);
+        break;
     }
 }
 
-    void initMenu(struct User * u, sqlite3 * db)
+void initMenu(struct User *u, sqlite3 *db)
+{
+    bool validInput = false;
+    char buffer[100];
+    char extra;
+    int option;
+    while (!validInput)
     {
-        bool validInput = false;
-        int option;
-        while (!validInput)
+        system("clear");
+        printf("\n\n\t\t\t======= ATM =======\n\n");
+        printf("\n\t\t-->> Feel free to login / register :\n");
+        printf("\n\t\t[1]- login\n");
+        printf("\n\t\t[2]- register\n");
+        printf("\n\t\t[3]- exit\n");
+
+        if (scanf("%d%c", &option, &extra) != 2 || extra != '\n')
         {
-            system("clear");
-             printf("\n\n\t\t\t======= ATM =======\n\n");
-            printf("\n\t\t-->> Feel free to login / register :\n");
-            printf("\n\t\t[1]- login\n");
-            printf("\n\t\t[2]- register\n");
-            printf("\n\t\t[3]- exit\n");
+            printf("\n\t\tInvalid input! Please enter a single digit (1-8).\n");
+            exit(1);
+        }
 
-            scanf("%d", &option);
-            switch (option)
-            {
-            case 1:
-                loginMenu(db);
-                validInput = true;
-                break;
-            case 2:
+        if (option < 1 || option > 8)
+        {
+            printf("\n\t\tInvalid choice! Please enter a number between 1 and 8.\n");
+            exit(1);
+        }
+        switch (option)
+        {
+        case 1:
+            loginMenu(db);
+            validInput = true;
+            break;
+        case 2:
 
-                registerAcc(db);
-                validInput = true;
-                break;
-            case 3:
-                exit(1);
-                break;
-            default:
-                printf("Insert a valid operation!\n");
-                validInput = true;
-                break;
-            }
+            registerAcc(db);
+            validInput = true;
+            break;
+        case 3:
+            exit(1);
+            break;
+        default:
+            printf("Insert a valid operation!\n");
+            validInput = true;
+            break;
         }
     }
-    int main()
+}
+int main()
+{
+    struct User u;
+    sqlite3 *db; // Declare the database pointer
+    int rc;
+
+    // Initialize the database and create tables
+    rc = initializeDatabase(&db);
+    if (rc != SQLITE_OK)
     {
-        struct User u;
-        sqlite3 *db; // Declare the database pointer
-        int rc;
-
-        // Initialize the database and create tables
-        rc = initializeDatabase(&db);
-        if (rc != SQLITE_OK)
-        {
-            fprintf(stderr, "Failed to initialize database. Error: %s\n", sqlite3_errmsg(db));
-            return 1;
-        }
-        initMenu(&u, db);
-
-        // Close the database connection
-        sqlite3_close(db);
-        printf("Thank you for using our ATM system. Goodbye!\n");
-        return 0;
+        fprintf(stderr, "Failed to initialize database. Error: %s\n", sqlite3_errmsg(db));
+        return 1;
     }
+    initMenu(&u, db);
+
+    // Close the database connection
+    sqlite3_close(db);
+    printf("Thank you for using our ATM system. Goodbye!\n");
+    return 0;
+}
