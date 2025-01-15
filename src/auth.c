@@ -55,17 +55,50 @@ const char *getPassword(const char *username, sqlite3 *db) {
     sqlite3_finalize(stmt_pass);
     return password;
 }
-
 void loginMenu(sqlite3 *db) {
     struct User u;
     const char *stored_password;
+    char buffer[BUFFER_SIZE];
+    int valid_input = 0;
 
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
-    printf("\nEnter your username: ");
-    scanf("%s", u.name);
 
-    // Disabling echo for password input
+    // Clear any leftover input
+    clearInputBuffer();
+
+    // Username validation
+    while (!valid_input) {
+        printf("\nEnter your username: ");
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+            printf("Error reading input.\n");
+            continue;
+        }
+        buffer[strcspn(buffer, "\n")] = 0;  // Remove newline
+
+        if (strlen(buffer) == 0) {
+            printf("Username cannot be empty.\n");
+            continue;
+        }
+
+        if (strlen(buffer) > MAX_USERNAME_LENGTH) {
+            printf("Username is too long. Maximum %d characters allowed.\n", MAX_USERNAME_LENGTH);
+            continue;
+        }
+
+        valid_input = 1;
+        for (int i = 0; buffer[i] != '\0'; i++) {
+            if (!isalnum(buffer[i]) && buffer[i] != '_') {
+                printf("Username should contain only letters, numbers, and underscores.\n");
+                valid_input = 0;
+                break;
+            }
+        }
+    }
+    strncpy(u.name, buffer, MAX_USERNAME_LENGTH);
+    u.name[MAX_USERNAME_LENGTH - 1] = '\0';
+
+    // Password input with hidden characters
     struct termios oflags, nflags;
     tcgetattr(fileno(stdin), &oflags);
     nflags = oflags;
@@ -76,31 +109,54 @@ void loginMenu(sqlite3 *db) {
         perror("tcsetattr");
         return;
     }
-    printf("\nEnter the password to login: ");
-    scanf("%s", u.password);
+
+    // Password validation
+    valid_input = 0;
+    while (!valid_input) {
+        printf("\nEnter the password to login: ");
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+            printf("Error reading input.\n");
+            continue;
+        }
+        buffer[strcspn(buffer, "\n")] = 0;  // Remove newline
+
+        if (strlen(buffer) == 0) {
+            printf("Password cannot be empty.\n");
+            continue;
+        }
+
+        if (strlen(buffer) > MAX_PASSWORD_LENGTH) {
+            printf("Password is too long. Maximum %d characters allowed.\n", MAX_PASSWORD_LENGTH);
+            continue;
+        }
+
+        valid_input = 1;
+    }
+    strncpy(u.password, buffer, MAX_PASSWORD_LENGTH);
+    u.password[MAX_PASSWORD_LENGTH - 1] = '\0';
 
     // Restore terminal settings
     tcsetattr(fileno(stdin), TCSANOW, &oflags);
 
-    // Retrieve the stored password
+    // Authentication
     stored_password = getPassword(u.name, db);
     if (stored_password == NULL) {
-        printf("User not found\n");
+        printf("\nUser not found\n");
         return;
     }
 
-    // Compare the password directly
     if (strcmp(stored_password, u.password) == 0) {
-        printf("Login successful\n");
+        printf("\nLogin successful!\n");
         u.id = getUserId(u.name, db);
         if (u.id == -1) {
             printf("Failed to retrieve user ID.\n");
+            free((void*)stored_password);
             return;
         }
         free((void*)stored_password);
         mainMenu(&u, db);
     } else {
-        printf("Wrong password\n");
+        printf("\nWrong password\n");
         free((void*)stored_password);
         return;
     }
