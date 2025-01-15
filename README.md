@@ -62,6 +62,7 @@ CREATE TABLE accounts (
     phone TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+```
 
 ### Setup and Installation:
 
