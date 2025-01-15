@@ -158,9 +158,6 @@ Non-existent accounts
 Unauthorized operations
 
 
-### Database Initialization
-The system automatically initializes the SQLite database on first run. 
-
 ### Contributing:
 Fork the repository
 
