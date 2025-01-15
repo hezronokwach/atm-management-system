@@ -44,14 +44,14 @@ A C-based ATM management system with SQLite3 database integration that allows us
 The system uses SQLite3 database with the following tables:
 
 ```sql
-Users Table
+users Table
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL
 );
 
-Accounts Table
+accounts Table
 CREATE TABLE accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
